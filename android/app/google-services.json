@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "30359020028",
+    "project_id": "secatask",
+    "storage_bucket": "secatask.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:30359020028:android:cf77d4e04bf4d724a99279",
+        "android_client_info": {
+          "package_name": "com.example.secatask"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDk5O_py8Bj6po_yolCRE3CZ79g402wIGE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
