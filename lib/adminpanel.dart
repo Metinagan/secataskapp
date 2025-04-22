@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:secatask/addemployee.dart';
+import 'package:secatask/taskscreen.dart';
 
 class MyAdminPanelScreen extends StatefulWidget {
   final String name;
@@ -131,7 +132,18 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios_rounded),
                     onTap: () {
-                      // Detay sayfasına geçiş ya da başka işlem
+                      String fullName =
+                          '${employee['name']} ${employee['surname']}';
+                      String email = employee['email'];
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  TaskScreen(fullName: fullName, email: email),
+                        ),
+                      );
                     },
                   ),
                 );
