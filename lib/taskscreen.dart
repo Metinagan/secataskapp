@@ -333,6 +333,7 @@ class _TaskAddSheetState extends State<TaskAddSheet> {
       DateTime? endDate = selectedDateTime.add(
         const Duration(hours: 1),
       ); // Varsayılan enddate
+      // ignore: prefer_conditional_assignment, unnecessary_null_comparison
       if (endDate == null) {
         endDate =
             null; // Eğer endDate null olarak kalacaksa, burada belirliyoruz.
