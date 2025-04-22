@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:secatask/edittastkscreen.dart';
 
 class MyEmployeeTasksScreen extends StatefulWidget {
   final String name;
@@ -229,7 +228,7 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
 class EditTaskScreen extends StatefulWidget {
   final String taskId;
   final String taskName;
-  final Timestamp taskStartDate;
+  final Timestamp? taskStartDate;
   final Timestamp? taskEndDate;
   final String taskOwnerEmail;
   final int taskState;
@@ -252,6 +251,7 @@ class EditTaskScreen extends StatefulWidget {
 class _EditTaskScreenState extends State<EditTaskScreen> {
   late TextEditingController taskNameController;
   late TextEditingController taskNoteController;
+  DateTime? taskStartDate;
   DateTime? taskEndDate;
   int? selectedTaskState;
 
@@ -339,11 +339,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
             SizedBox(height: 16),
 
             // Başlangıç Tarihi
-            _buildDateInfo(
-              icon: Icons.calendar_today,
-              label: "Başlangıç Tarihi",
-              date: widget.taskStartDate.toDate(),
-            ),
+            _buildStartDatePicker(),
             SizedBox(height: 16),
 
             // Bitiş Tarihi (Opsiyonel)
@@ -387,19 +383,51 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     );
   }
 
-  // Başlangıç tarihi bilgisi
-  Widget _buildDateInfo({
-    required IconData icon,
-    required String label,
-    required DateTime date,
-  }) {
+  // Başlangıç tarihi ve saati seçici
+  Widget _buildStartDatePicker() {
+    // Eğer taskStartDate null ise, o anki tarih ve saatle başla
+    DateTime currentDate = taskStartDate ?? DateTime.now();
+
     return Row(
       children: [
-        Icon(icon, color: Colors.deepPurpleAccent),
+        Icon(Icons.calendar_today, color: Colors.deepPurpleAccent),
         SizedBox(width: 8),
         Text(
-          "$label: ${DateFormat('dd MMM yyyy HH:mm').format(date)}",
-          style: TextStyle(fontSize: 16),
+          "Başlangıç Zamanı: ${DateFormat('dd MMM yyyy HH:mm').format(currentDate)}",
+          style: TextStyle(color: Colors.deepPurpleAccent),
+        ),
+        IconButton(
+          icon: Icon(Icons.edit, color: Colors.deepPurpleAccent),
+          onPressed: () async {
+            final DateTime? selectedDate = await showDatePicker(
+              context: context,
+              initialDate: currentDate,
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2101),
+            );
+            if (selectedDate != null) {
+              final TimeOfDay? selectedTime = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay.fromDateTime(currentDate),
+              );
+              if (selectedTime != null) {
+                setState(() {
+                  taskStartDate = DateTime(
+                    selectedDate.year,
+                    selectedDate.month,
+                    selectedDate.day,
+                    selectedTime.hour,
+                    selectedTime.minute,
+                  );
+                });
+              }
+            } else {
+              setState(() {
+                taskStartDate =
+                    currentDate; // Eğer tarih seçilmezse, mevcut tarih ve saat kaydedilsin
+              });
+            }
+          },
         ),
       ],
     );
@@ -411,91 +439,75 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       children: [
         Icon(Icons.calendar_today, color: Colors.deepPurpleAccent),
         SizedBox(width: 8),
-        Text("Bitiş Tarihi: ", style: TextStyle(fontSize: 16)),
+        Text(
+          taskEndDate == null
+              ? "Bitiş Zamanı"
+              : "Bitiş Zamanı: ${DateFormat('dd MMM yyyy HH:mm').format(taskEndDate!)}",
+          style: TextStyle(color: Colors.deepPurpleAccent),
+        ),
         IconButton(
           icon: Icon(Icons.edit, color: Colors.deepPurpleAccent),
           onPressed: () async {
-            final pickedDate = await showDatePicker(
+            final DateTime? selectedDate = await showDatePicker(
               context: context,
               initialDate: taskEndDate ?? DateTime.now(),
-              firstDate: DateTime(2020),
+              firstDate: DateTime(2000),
               lastDate: DateTime(2101),
             );
-            if (pickedDate != null) {
-              final pickedTime = await showTimePicker(
+            if (selectedDate != null) {
+              final TimeOfDay? selectedTime = await showTimePicker(
                 context: context,
                 initialTime: TimeOfDay.fromDateTime(
                   taskEndDate ?? DateTime.now(),
                 ),
               );
-              if (pickedTime != null) {
+              if (selectedTime != null) {
                 setState(() {
                   taskEndDate = DateTime(
-                    pickedDate.year,
-                    pickedDate.month,
-                    pickedDate.day,
-                    pickedTime.hour,
-                    pickedTime.minute,
+                    selectedDate.year,
+                    selectedDate.month,
+                    selectedDate.day,
+                    selectedTime.hour,
+                    selectedTime.minute,
                   );
                 });
               }
             }
           },
         ),
-        Text(
-          taskEndDate != null
-              ? DateFormat('dd MMM yyyy HH:mm').format(taskEndDate!)
-              : "Seçiniz",
-          style: TextStyle(fontSize: 16),
-        ),
       ],
     );
   }
 
-  // Görev durumu dropdown menüsü
+  // Durum seçici
   Widget _buildDropdown() {
     return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5)],
       ),
-      child: DropdownButtonFormField<int>(
+      child: DropdownButton<int>(
         value: selectedTaskState,
-        decoration: InputDecoration(
-          labelText: "Görev Durumu",
-          labelStyle: TextStyle(color: Colors.deepPurpleAccent),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.all(16),
-        ),
-        items: [
-          DropdownMenuItem(
-            value: 1,
-            child: Text("Başlamadı", style: TextStyle(color: Colors.black)),
-          ),
-          DropdownMenuItem(
-            value: 2,
-            child: Text("Devam Ediyor", style: TextStyle(color: Colors.blue)),
-          ),
-          DropdownMenuItem(
-            value: 3,
-            child: Text("Tamamlandı", style: TextStyle(color: Colors.green)),
-          ),
-          DropdownMenuItem(
-            value: 0,
-            child: Text("İptal Edildi", style: TextStyle(color: Colors.red)),
-          ),
-        ],
+        isExpanded: true,
+        underline: SizedBox(),
         onChanged: (newValue) {
           setState(() {
             selectedTaskState = newValue;
           });
         },
+        items: [
+          DropdownMenuItem(value: 0, child: Text('İptal Edildi')),
+          DropdownMenuItem(value: 1, child: Text('Başlamadı')),
+          DropdownMenuItem(value: 2, child: Text('Devam Ediyor')),
+          DropdownMenuItem(value: 3, child: Text('Tamamlandı')),
+        ],
       ),
     );
   }
 
-  // Görev kaydetme butonu
+  // Kaydetme butonu
   Widget _buildSaveButton() {
     return Center(
       child: ElevatedButton(
@@ -503,11 +515,14 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor:
               Colors.deepPurpleAccent, // primary yerine backgroundColor
-          padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         child: Text(
-          widget.taskId.isEmpty ? "Görevi Ekle" : "Görevi Güncelle",
-          style: TextStyle(fontSize: 18),
+          widget.taskId.isEmpty ? "Görevi Kaydet" : "Değişiklikleri Kaydet",
+          style: TextStyle(fontSize: 16),
         ),
       ),
     );
