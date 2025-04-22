@@ -85,10 +85,11 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                           firstDate: DateTime(2020),
                           lastDate: DateTime(2101),
                         );
-                        if (pickedDate != null && pickedDate != _startDate)
+                        if (pickedDate != null && pickedDate != _startDate) {
                           setState(() {
                             _startDate = pickedDate;
                           });
+                        }
                       },
                     ),
                   ),
@@ -96,13 +97,14 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                     child: ListTile(
                       title: Text('Bitiş Tarihi (Opsiyonel)'),
                       subtitle:
+                          // ignore: unnecessary_null_comparison
                           _endDate != null
                               ? Text('${_endDate.toLocal()}'.split(' ')[0])
                               : Text('Seçiniz'),
                       onTap: () async {
                         DateTime? pickedDate = await showDatePicker(
                           context: context,
-                          initialDate: _endDate ?? DateTime.now(),
+                          initialDate: _endDate,
                           firstDate: DateTime(2020),
                           lastDate: DateTime(2101),
                         );
