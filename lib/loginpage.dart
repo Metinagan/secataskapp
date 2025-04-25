@@ -54,10 +54,13 @@ class _LoginPageState extends State<LoginPage> {
           var adminName = doc.data()['name'];
           var adminSurname = doc.data()['surname'];
           var name = adminName + ' ' + adminSurname;
+          var adminEmail = doc.data()['email'];
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => MyAdminPanelScreen(name: name),
+              builder:
+                  (context) =>
+                      MyAdminPanelScreen(name: name, email: adminEmail),
             ),
           );
         } else if (role == 'employee') {

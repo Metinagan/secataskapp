@@ -194,35 +194,11 @@ class _EmployeeEditTaskScreenState extends State<EmployeeEditTaskScreen> {
     return DropdownButtonFormField<int>(
       value: selectedTaskState,
       onChanged: (val) => setState(() => selectedTaskState = val),
-      items: [
-        DropdownMenuItem(
-          value: 0,
-          child: Text(
-            'İptal Edildi',
-            style: TextStyle(color: Colors.red), // Kırmızı renk
-          ),
-        ),
-        DropdownMenuItem(
-          value: 1,
-          child: Text(
-            'Başlamadı',
-            style: TextStyle(color: Colors.grey), // Gri renk
-          ),
-        ),
-        DropdownMenuItem(
-          value: 2,
-          child: Text(
-            'Devam Ediyor',
-            style: TextStyle(color: Colors.blueAccent), // Amber renk
-          ),
-        ),
-        DropdownMenuItem(
-          value: 3,
-          child: Text(
-            'Tamamlandı',
-            style: TextStyle(color: Colors.green), // Yeşil renk
-          ),
-        ),
+      items: const [
+        DropdownMenuItem(value: 0, child: Text('İptal Edildi')),
+        DropdownMenuItem(value: 1, child: Text('Başlamadı')),
+        DropdownMenuItem(value: 2, child: Text('Devam Ediyor')),
+        DropdownMenuItem(value: 3, child: Text('Tamamlandı')),
       ],
       decoration: InputDecoration(
         labelText: "Görev Durumu",

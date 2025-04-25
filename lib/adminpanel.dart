@@ -1,12 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:secatask/addMultiTask.dart';
 import 'package:secatask/addemployee.dart';
 import 'package:secatask/taskscreen.dart';
 
 class MyAdminPanelScreen extends StatefulWidget {
   final String name;
+  final String email;
 
-  const MyAdminPanelScreen({super.key, required this.name});
+  const MyAdminPanelScreen({
+    super.key,
+    required this.name,
+    required this.email,
+  });
 
   @override
   _MyAdminPanelScreenState createState() => _MyAdminPanelScreenState();
@@ -50,7 +56,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.deepPurpleAccent,
-        centerTitle: true,
+        centerTitle: false, // Bu satırı false yaparak başlığı sola yaslıyoruz
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -60,17 +66,53 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
             ),
           ),
         ),
-        title: Text(
-          widget.name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 28,
-            color: Colors.white,
+        title: Align(
+          alignment:
+              Alignment
+                  .centerLeft, // Başlığı sola yaslamak için Align kullanıyoruz
+          child: Text(
+            widget.name,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: Colors.white,
+            ),
           ),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+            padding: const EdgeInsets.only(right: 6.0),
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.white),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.white.withOpacity(0.2),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) =>
+                            AddMultiUserTaskScreen(email: widget.email),
+                  ),
+                );
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Text(
+                    'Görev Ekle', // Butonun yazısı
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Colors.white),
@@ -90,7 +132,15 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                   ),
                 );
               },
-              child: const Icon(Icons.add, color: Colors.white, size: 30),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Text(
+                    'Çalışan Ekle', // Butonun yazısı
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
