@@ -38,7 +38,12 @@ class _TaskScreenState extends State<TaskScreen> {
         print("No tasks found for this email.");
       }
 
-      final tasks = snapshot.docs.map((doc) => doc.data()).toList();
+      final tasks =
+          snapshot.docs.map((doc) {
+            var taskData = doc.data();
+            taskData['id'] = doc.id; // ID'yi ekliyoruz
+            return taskData;
+          }).toList();
 
       setState(() {
         allTasks = tasks.cast<Map<String, dynamic>>();
