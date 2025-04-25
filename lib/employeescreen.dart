@@ -59,8 +59,13 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
     DateTime now = DateTime.now();
 
     if (selectedTimeFilter == 'Bu Hafta') {
-      DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-      DateTime endOfWeek = startOfWeek.add(Duration(days: 6));
+      // Haftanın başlangıcı (Pazartesi) ve sonu (Pazar)
+      int weekday = now.weekday;
+      DateTime startOfWeek = now.subtract(
+        Duration(days: weekday - 1),
+      ); // Pazartesi
+      DateTime endOfWeek = startOfWeek.add(Duration(days: 6)); // Pazar
+
       filtered =
           filtered.where((task) {
             DateTime taskDate = (task['startdate'] as Timestamp).toDate();
@@ -70,10 +75,17 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
                 taskDate.isBefore(endOfWeek.add(Duration(days: 1)));
           }).toList();
     } else if (selectedTimeFilter == 'Bu Ay') {
+      // Bu ayın başı
+      DateTime startOfMonth = DateTime(now.year, now.month, 1);
+      DateTime endOfMonth = DateTime(now.year, now.month + 1, 0); // Ayın sonu
+
       filtered =
           filtered.where((task) {
             DateTime taskDate = (task['startdate'] as Timestamp).toDate();
-            return taskDate.month == now.month && taskDate.year == now.year;
+            return taskDate.isAfter(
+                  startOfMonth.subtract(Duration(seconds: 1)),
+                ) &&
+                taskDate.isBefore(endOfMonth.add(Duration(days: 1)));
           }).toList();
     }
 

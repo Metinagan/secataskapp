@@ -50,15 +50,27 @@ class _TaskScreenState extends State<TaskScreen> {
 
   List<Map<String, dynamic>> getFilteredTasks() {
     DateTime now = DateTime.now();
+    DateTime startOfWeek;
+    DateTime startOfMonth;
 
-    // Filtreleme
+    // Pazartesi günü için tarih hesaplama
+    startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+
+    // Bu ayın başlangıç tarihi
+    startOfMonth = DateTime(now.year, now.month, 1);
+
     var filteredTasks =
         allTasks.where((task) {
           DateTime taskDate = (task['startdate'] as Timestamp).toDate();
+
           if (selectedFilter == 'week') {
-            return taskDate.isAfter(now.subtract(const Duration(days: 7)));
+            // Pazartesi gününden itibaren bugüne kadar olan görevler
+            return taskDate.isAfter(startOfWeek) &&
+                taskDate.isBefore(now.add(Duration(days: 1)));
           } else if (selectedFilter == 'month') {
-            return taskDate.isAfter(now.subtract(const Duration(days: 30)));
+            // Bu ayın başından bugüne kadar olan görevler
+            return taskDate.isAfter(startOfMonth) &&
+                taskDate.isBefore(now.add(Duration(days: 1)));
           }
           return true;
         }).toList();
