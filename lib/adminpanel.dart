@@ -49,25 +49,35 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.deepPurpleAccent,
         centerTitle: true,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurpleAccent, Colors.purple],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         title: Text(
-          widget.name, // Display the name in the app bar
+          widget.name,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
+            fontSize: 28,
             color: Colors.white,
           ),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 12.0),
+            padding: const EdgeInsets.only(right: 16.0),
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Colors.white),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.white24,
+                backgroundColor: Colors.white.withOpacity(0.2),
               ),
               onPressed: () {
                 Navigator.push(
@@ -75,19 +85,18 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                   MaterialPageRoute(
                     builder:
                         (context) => AddEmployeeScreen(
-                          onEmployeeAdded:
-                              refreshEmployeeList, // Refresh after adding employee
+                          onEmployeeAdded: refreshEmployeeList,
                         ),
                   ),
                 );
               },
-              child: const Icon(Icons.add, color: Colors.white, size: 24),
+              child: const Icon(Icons.add, color: Colors.white, size: 30),
             ),
           ),
         ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: employeesFuture, // Updated future for employee list
+        future: employeesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -113,24 +122,35 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                     '${employee['name']} ${employee['surname']}';
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  elevation: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  elevation: 6,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
+                  shadowColor: Colors.deepPurpleAccent.withOpacity(0.5),
                   child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12.0,
+                      horizontal: 16.0,
+                    ),
                     leading: CircleAvatar(
                       backgroundColor: Colors.deepPurple,
                       child: Text(
-                        employee['name'][0], // İlk harfi gösteriyoruz
+                        employee['name'][0],
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),
                     title: Text(
                       employeeName,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios_rounded),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.deepPurple,
+                    ),
                     onTap: () {
                       String fullName =
                           '${employee['name']} ${employee['surname']}';

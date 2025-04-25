@@ -38,6 +38,7 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
 
       final fetchedTasks =
           snapshot.docs.map((doc) {
+            // ignore: unnecessary_cast
             final data = doc.data() as Map<String, dynamic>;
             data['id'] = doc.id;
             return data;

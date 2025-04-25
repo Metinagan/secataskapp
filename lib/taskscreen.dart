@@ -14,6 +14,8 @@ class TaskScreen extends StatefulWidget {
 
 class _TaskScreenState extends State<TaskScreen> {
   String selectedFilter = 'week';
+  String selectedOrder =
+      'newest'; // En yeni / en eski toggle butonu için ekledik
   List<Map<String, dynamic>> allTasks = [];
 
   @override
@@ -49,16 +51,34 @@ class _TaskScreenState extends State<TaskScreen> {
   List<Map<String, dynamic>> getFilteredTasks() {
     DateTime now = DateTime.now();
 
-    return allTasks.where((task) {
-        DateTime taskDate = (task['startdate'] as Timestamp).toDate();
-        if (selectedFilter == 'week') {
-          return taskDate.isAfter(now.subtract(const Duration(days: 7)));
-        } else if (selectedFilter == 'month') {
-          return taskDate.isAfter(now.subtract(const Duration(days: 30)));
-        }
-        return true;
-      }).toList()
-      ..sort((a, b) => (b['startdate'] as Timestamp).compareTo(a['startdate']));
+    // Filtreleme
+    var filteredTasks =
+        allTasks.where((task) {
+          DateTime taskDate = (task['startdate'] as Timestamp).toDate();
+          if (selectedFilter == 'week') {
+            return taskDate.isAfter(now.subtract(const Duration(days: 7)));
+          } else if (selectedFilter == 'month') {
+            return taskDate.isAfter(now.subtract(const Duration(days: 30)));
+          }
+          return true;
+        }).toList();
+
+    // Sıralama
+    if (selectedOrder == 'newest') {
+      filteredTasks.sort(
+        (a, b) => (b['startdate'] as Timestamp).compareTo(
+          a['startdate'] as Timestamp,
+        ),
+      );
+    } else if (selectedOrder == 'oldest') {
+      filteredTasks.sort(
+        (a, b) => (a['startdate'] as Timestamp).compareTo(
+          b['startdate'] as Timestamp,
+        ),
+      );
+    }
+
+    return filteredTasks;
   }
 
   void refreshTasks() async {
@@ -83,22 +103,18 @@ class _TaskScreenState extends State<TaskScreen> {
       appBar: AppBar(
         backgroundColor: Colors.deepPurple,
         title: Center(
-          // Burada Center widget'ını ekliyoruz
-          child: Text(
-            widget.fullName, // İsim Soyisim parametresi
-            style: TextStyle(color: Colors.white), // Beyaz renk
-          ),
+          child: Text(widget.fullName, style: TextStyle(color: Colors.white)),
         ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white), // Beyaz border
+                side: const BorderSide(color: Colors.white),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12), // Yuvarlak kenarlar
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.white24, // Hafif transparan arka plan
+                backgroundColor: Colors.white24,
               ),
               onPressed: () async {
                 await showModalBottomSheet(
@@ -116,45 +132,70 @@ class _TaskScreenState extends State<TaskScreen> {
                       ),
                 );
               },
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 24,
-              ), // Beyaz ikon
+              child: const Icon(Icons.add, color: Colors.white, size: 24),
             ),
           ),
         ],
       ),
-
       body: Column(
         children: [
           const SizedBox(height: 12),
-          ToggleButtons(
-            isSelected: [
-              selectedFilter == 'week',
-              selectedFilter == 'month',
-              selectedFilter == 'all',
-            ],
-            borderRadius: BorderRadius.circular(16),
-            selectedColor: Colors.white,
-            fillColor: Colors.deepPurple,
-            onPressed: (index) {
-              setState(() {
-                selectedFilter = ['week', 'month', 'all'][index];
-              });
-            },
-            children: const [
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text('Bu Hafta'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center, // Butonları ortala
+            children: [
+              ToggleButtons(
+                isSelected: [
+                  selectedFilter == 'week',
+                  selectedFilter == 'month',
+                  selectedFilter == 'all',
+                ],
+                borderRadius: BorderRadius.circular(16),
+                selectedColor: Colors.white,
+                fillColor: Colors.deepPurple,
+                onPressed: (index) {
+                  setState(() {
+                    selectedFilter = ['week', 'month', 'all'][index];
+                  });
+                },
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('Bu Hafta'),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('Bu Ay'),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('Tüm Zamanlar'),
+                  ),
+                ],
               ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text('Bu Ay'),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text('Tüm Zamanlar'),
+              const SizedBox(width: 16), // Araya boşluk ekliyoruz
+              ToggleButtons(
+                isSelected: [
+                  selectedOrder == 'newest',
+                  selectedOrder == 'oldest',
+                ],
+                borderRadius: BorderRadius.circular(16),
+                selectedColor: Colors.white,
+                fillColor: Colors.deepPurple,
+                onPressed: (index) {
+                  setState(() {
+                    selectedOrder = ['newest', 'oldest'][index];
+                  });
+                },
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('En Yeni'),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('En Eski'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -173,7 +214,6 @@ class _TaskScreenState extends State<TaskScreen> {
                         DateTime? endDate =
                             (task['enddate'] as Timestamp?)?.toDate();
 
-                        // Task State Icon
                         IconData taskIcon;
                         Color taskColor;
 
@@ -329,14 +369,10 @@ class _TaskAddSheetState extends State<TaskAddSheet> {
           .doc('WrgRRDBv5bn9WhP1UESe')
           .collection('tasks');
 
-      // Eğer enddate belirlenmemişse, onu null olarak kaydederiz
-      DateTime? endDate = selectedDateTime.add(
-        const Duration(hours: 1),
-      ); // Varsayılan enddate
-      // ignore: prefer_conditional_assignment, unnecessary_null_comparison
+      DateTime? endDate = selectedDateTime.add(const Duration(hours: 1));
+
       if (endDate == null) {
-        endDate =
-            null; // Eğer endDate null olarak kalacaksa, burada belirliyoruz.
+        endDate = null;
       }
 
       await tasksRef.add({
@@ -344,8 +380,8 @@ class _TaskAddSheetState extends State<TaskAddSheet> {
         'title': titleController.text,
         'note': note,
         'startdate': selectedDateTime,
-        'enddate': endDate, // Burada null olabilir.
-        'taskstate': 1, // Başlangıçta "1" (Görev Başlamadı)
+        'enddate': endDate,
+        'taskstate': 1,
       });
 
       widget.onTaskAdded();
@@ -426,16 +462,13 @@ class _TaskAddSheetState extends State<TaskAddSheet> {
                 icon: const Icon(Icons.check),
                 label: const Text("Kaydet"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple, // Arka plan rengi
+                  backgroundColor: Colors.deepPurple,
                   minimumSize: const Size(double.infinity, 48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: Colors.white,
-                      width: 2,
-                    ), // Beyaz border ekledik
+                    side: BorderSide(color: Colors.white, width: 2),
                   ),
-                  foregroundColor: Colors.white, // Metin rengi beyaz
+                  foregroundColor: Colors.white,
                 ),
                 onPressed: saveTask,
               ),

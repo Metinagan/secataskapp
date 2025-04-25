@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // TextInputFormatter için gerekli import
 
 class AddEmployeeScreen extends StatefulWidget {
   final Function onEmployeeAdded;
@@ -95,6 +96,9 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                       fillColor: Colors.white,
                     ),
                     textInputAction: TextInputAction.next,
+                    inputFormatters: [
+                      UpperCaseTextFormatter(), // Yalnızca büyük harfler
+                    ],
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -108,6 +112,9 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
                       fillColor: Colors.white,
                     ),
                     textInputAction: TextInputAction.next,
+                    inputFormatters: [
+                      UpperCaseTextFormatter(), // Yalnızca büyük harfler
+                    ],
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -165,6 +172,20 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// TextInputFormatter that makes the text uppercase
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return newValue.copyWith(
+      text: newValue.text.toUpperCase(),
+      selection: TextSelection.collapsed(offset: newValue.text.length),
     );
   }
 }
