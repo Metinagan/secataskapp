@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:secatask/employeeEditTaskScreen.dart';
 
 class MyEmployeeTasksScreen extends StatefulWidget {
   final String name;
@@ -13,7 +14,11 @@ class MyEmployeeTasksScreen extends StatefulWidget {
 }
 
 class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
+  List<Map<String, dynamic>> allTasks = [];
   List<Map<String, dynamic>> tasks = [];
+
+  String selectedTimeFilter = 'Bu Hafta';
+  String selectedSort = 'Yeni → Eski';
 
   @override
   void initState() {
@@ -33,17 +38,61 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
 
       final fetchedTasks =
           snapshot.docs.map((doc) {
-            final data = doc.data();
+            final data = doc.data() as Map<String, dynamic>;
             data['id'] = doc.id;
             return data;
           }).toList();
 
       setState(() {
-        tasks = fetchedTasks;
+        allTasks = fetchedTasks;
+        applyFilters();
       });
     } catch (e) {
       print("Error fetching tasks: $e");
     }
+  }
+
+  void applyFilters() {
+    List<Map<String, dynamic>> filtered = List.from(allTasks);
+
+    DateTime now = DateTime.now();
+
+    if (selectedTimeFilter == 'Bu Hafta') {
+      DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+      DateTime endOfWeek = startOfWeek.add(Duration(days: 6));
+      filtered =
+          filtered.where((task) {
+            DateTime taskDate = (task['startdate'] as Timestamp).toDate();
+            return taskDate.isAfter(
+                  startOfWeek.subtract(Duration(seconds: 1)),
+                ) &&
+                taskDate.isBefore(endOfWeek.add(Duration(days: 1)));
+          }).toList();
+    } else if (selectedTimeFilter == 'Bu Ay') {
+      filtered =
+          filtered.where((task) {
+            DateTime taskDate = (task['startdate'] as Timestamp).toDate();
+            return taskDate.month == now.month && taskDate.year == now.year;
+          }).toList();
+    }
+
+    if (selectedSort == 'Yeni → Eski') {
+      filtered.sort(
+        (a, b) => (b['startdate'] as Timestamp).compareTo(
+          a['startdate'] as Timestamp,
+        ),
+      );
+    } else {
+      filtered.sort(
+        (a, b) => (a['startdate'] as Timestamp).compareTo(
+          b['startdate'] as Timestamp,
+        ),
+      );
+    }
+
+    setState(() {
+      tasks = filtered;
+    });
   }
 
   Future<void> deleteTask(String taskId) async {
@@ -54,7 +103,7 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
           .collection('tasks')
           .doc(taskId)
           .delete();
-      fetchTasks(); // Görev silindikten sonra listeyi güncelle
+      fetchTasks();
     } catch (e) {
       print("Error deleting task: $e");
     }
@@ -63,140 +112,230 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.deepPurpleAccent,
-        title: Center(
-          child: Text(
-            widget.name,
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(60),
+        child: AppBar(
+          backgroundColor: Colors.deepPurpleAccent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
+          ),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.deepPurpleAccent, Colors.purple],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          title: Center(
+            child: Text(
+              widget.name,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 32,
+              ),
+            ),
           ),
         ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
-        child:
-            tasks.isEmpty
-                ? const Center(child: Text("Görev bulunamadı."))
-                : ListView.builder(
-                  itemCount: tasks.length,
-                  itemBuilder: (context, index) {
-                    final task = tasks[index];
-                    DateTime taskDate =
-                        (task['startdate'] as Timestamp).toDate();
-                    DateTime? endDate =
-                        (task['enddate'] as Timestamp?)?.toDate();
+        child: Column(
+          children: [
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ToggleButtons(
+                    isSelected: [
+                      selectedTimeFilter == 'Bu Hafta',
+                      selectedTimeFilter == 'Bu Ay',
+                      selectedTimeFilter == 'Tüm Zamanlar',
+                    ],
+                    onPressed: (index) {
+                      setState(() {
+                        if (index == 0) {
+                          selectedTimeFilter = 'Bu Hafta';
+                        } else if (index == 1) {
+                          selectedTimeFilter = 'Bu Ay';
+                        } else {
+                          selectedTimeFilter = 'Tüm Zamanlar';
+                        }
+                        applyFilters();
+                      });
+                    },
+                    children: [
+                      _buildToggleButton("Bu Hafta"),
+                      _buildToggleButton("Bu Ay"),
+                      _buildToggleButton("Tüm Zamanlar"),
+                    ],
+                    color: Colors.deepPurpleAccent,
+                    selectedColor: Colors.white,
+                    fillColor: Colors.deepPurpleAccent,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  SizedBox(width: 12),
+                  ToggleButtons(
+                    isSelected: [
+                      selectedSort == 'Yeni → Eski',
+                      selectedSort == 'Eski → Yeni',
+                    ],
+                    onPressed: (index) {
+                      setState(() {
+                        if (index == 0) {
+                          selectedSort = 'Yeni → Eski';
+                        } else {
+                          selectedSort = 'Eski → Yeni';
+                        }
+                        applyFilters();
+                      });
+                    },
+                    children: [
+                      _buildToggleButton("Yeni → Eski"),
+                      _buildToggleButton("Eski → Yeni"),
+                    ],
+                    color: Colors.deepPurpleAccent,
+                    selectedColor: Colors.white,
+                    fillColor: Colors.deepPurpleAccent,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 12),
+            Expanded(
+              child:
+                  tasks.isEmpty
+                      ? const Center(child: Text("Görev bulunamadı."))
+                      : ListView.builder(
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) {
+                          final task = tasks[index];
+                          DateTime taskDate =
+                              (task['startdate'] as Timestamp).toDate();
+                          DateTime? endDate =
+                              (task['enddate'] as Timestamp?)?.toDate();
 
-                    // Task State Icon
-                    IconData taskIcon;
-                    Color taskColor;
+                          IconData taskIcon;
+                          Color taskColor;
 
-                    switch (task['taskstate']) {
-                      case 1:
-                        taskIcon = Icons.remove_circle_outline;
-                        taskColor = Colors.grey;
-                        break;
-                      case 2:
-                        taskIcon = Icons.radio_button_checked;
-                        taskColor = Colors.blue;
-                        break;
-                      case 3:
-                        taskIcon = Icons.check_circle;
-                        taskColor = Colors.green;
-                        break;
-                      case 0:
-                        taskIcon = Icons.cancel;
-                        taskColor = Colors.red;
-                        break;
-                      default:
-                        taskIcon = Icons.help_outline;
-                        taskColor = Colors.black;
-                    }
+                          switch (task['taskstate']) {
+                            case 1:
+                              taskIcon = Icons.remove_circle_outline;
+                              taskColor = Colors.grey;
+                              break;
+                            case 2:
+                              taskIcon = Icons.radio_button_checked;
+                              taskColor = Colors.blue;
+                              break;
+                            case 3:
+                              taskIcon = Icons.check_circle;
+                              taskColor = Colors.green;
+                              break;
+                            case 0:
+                              taskIcon = Icons.cancel;
+                              taskColor = Colors.red;
+                              break;
+                            default:
+                              taskIcon = Icons.help_outline;
+                              taskColor = Colors.black;
+                          }
 
-                    return Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 3,
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      child: ListTile(
-                        leading: Icon(taskIcon, color: taskColor),
-                        title: GestureDetector(
-                          onTap: () {
-                            // Görev tıklanınca edit sayfasına yönlendiriliyor
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => EditTaskScreen(
-                                      taskId: task['id'],
-                                      taskName: task['title'],
-                                      taskStartDate: task['startdate'],
-                                      taskEndDate: task['enddate'],
-                                      taskOwnerEmail: task['ownermail'],
-                                      taskState: task['taskstate'],
-                                      taskNote: task['note'] ?? '',
-                                    ),
-                              ),
-                            ).then((_) {
-                              fetchTasks(); // Yeni görev eklendikten sonra listeyi güncelle
-                            });
-                          },
-                          child: Text(
-                            task['title'],
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Başlangıç Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(taskDate)}",
+                          return Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            if (endDate != null)
-                              Text(
-                                "Bitiş Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(endDate)}",
-                              ),
-                            if (task['note'] != null && task['note'].isNotEmpty)
-                              Text("NOT! : ${task['note']}"),
-                          ],
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: () {
-                            // Silme işlemi
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: Text("Silme Onayı"),
-                                  content: Text(
-                                    "Bu görevi silmek istediğinizden emin misiniz?",
+                            elevation: 3,
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            child: ListTile(
+                              leading: Icon(taskIcon, color: taskColor),
+                              title: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => EmployeeEditTaskScreen(
+                                            taskId: task['id'],
+                                            taskName: task['title'],
+                                            taskStartDate: task['startdate'],
+                                            taskEndDate: task['enddate'],
+                                            taskOwnerEmail: task['ownermail'],
+                                            taskState: task['taskstate'],
+                                            taskNote: task['note'] ?? '',
+                                          ),
+                                    ),
+                                  ).then((_) => fetchTasks());
+                                },
+                                child: Text(
+                                  task['title'],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: Text("İptal"),
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Başlangıç Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(taskDate)}",
+                                  ),
+                                  if (endDate != null)
+                                    Text(
+                                      "Bitiş Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(endDate)}",
                                     ),
-                                    TextButton(
-                                      onPressed: () {
-                                        deleteTask(task['id']);
-                                        Navigator.pop(context);
-                                      },
-                                      child: Text(
-                                        "Sil",
-                                        style: TextStyle(color: Colors.red),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                        ),
+                                  if (task['note'] != null &&
+                                      task['note'].isNotEmpty)
+                                    Text("NOT! : ${task['note']}"),
+                                ],
+                              ),
+                              trailing: IconButton(
+                                icon: Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: Text("Silme Onayı"),
+                                        content: Text(
+                                          "Bu görevi silmek istediğinizden emin misiniz?",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.pop(context),
+                                            child: Text("İptal"),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              deleteTask(task['id']);
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text(
+                                              "Sil",
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepPurpleAccent,
@@ -206,7 +345,7 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
             context,
             MaterialPageRoute(
               builder:
-                  (context) => EditTaskScreen(
+                  (context) => EmployeeEditTaskScreen(
                     taskId: '',
                     taskName: '',
                     taskStartDate: Timestamp.now(),
@@ -216,315 +355,16 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
                     taskNote: '',
                   ),
             ),
-          ).then((_) {
-            fetchTasks(); // Yeni görev eklendikten sonra listeyi güncelle
-          });
+          ).then((_) => fetchTasks());
         },
       ),
     );
   }
-}
 
-class EditTaskScreen extends StatefulWidget {
-  final String taskId;
-  final String taskName;
-  final Timestamp? taskStartDate;
-  final Timestamp? taskEndDate;
-  final String taskOwnerEmail;
-  final int taskState;
-  final String taskNote;
-
-  EditTaskScreen({
-    required this.taskId,
-    required this.taskName,
-    required this.taskStartDate,
-    required this.taskEndDate,
-    required this.taskOwnerEmail,
-    required this.taskState,
-    required this.taskNote,
-  });
-
-  @override
-  _EditTaskScreenState createState() => _EditTaskScreenState();
-}
-
-class _EditTaskScreenState extends State<EditTaskScreen> {
-  late TextEditingController taskNameController;
-  late TextEditingController taskNoteController;
-  DateTime? taskStartDate;
-  DateTime? taskEndDate;
-  int? selectedTaskState;
-
-  @override
-  void initState() {
-    super.initState();
-    taskNameController = TextEditingController(text: widget.taskName);
-    taskNoteController = TextEditingController(text: widget.taskNote);
-    selectedTaskState = widget.taskState;
-
-    if (widget.taskEndDate != null) {
-      taskEndDate = widget.taskEndDate?.toDate();
-    }
-  }
-
-  @override
-  void dispose() {
-    taskNameController.dispose();
-    taskNoteController.dispose();
-    super.dispose();
-  }
-
-  Future<void> saveTask() async {
-    try {
-      final taskData = {
-        'title': taskNameController.text,
-        'startdate': widget.taskStartDate,
-        'enddate':
-            taskEndDate != null ? Timestamp.fromDate(taskEndDate!) : null,
-        'ownermail': widget.taskOwnerEmail,
-        'taskstate': selectedTaskState ?? 1,
-        'note':
-            taskNoteController.text.isEmpty ? null : taskNoteController.text,
-      };
-
-      if (widget.taskId.isEmpty) {
-        await FirebaseFirestore.instance
-            .collection('secavision')
-            .doc('WrgRRDBv5bn9WhP1UESe')
-            .collection('tasks')
-            .add(taskData);
-      } else {
-        await FirebaseFirestore.instance
-            .collection('secavision')
-            .doc('WrgRRDBv5bn9WhP1UESe')
-            .collection('tasks')
-            .doc(widget.taskId)
-            .update(taskData);
-      }
-
-      Navigator.pop(context);
-    } catch (e) {
-      print("Error saving task: $e");
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.taskId.isEmpty ? "Yeni Görev Ekle" : "Görevi Düzenle",
-        ),
-        backgroundColor: Colors.deepPurpleAccent,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Görev Başlığı
-            _buildTextField(
-              controller: taskNameController,
-              labelText: "Görev Başlığı",
-            ),
-            SizedBox(height: 16),
-
-            // Görev Notu
-            _buildTextField(
-              controller: taskNoteController,
-              labelText: "Görev Notu",
-              maxLines: 3,
-            ),
-            SizedBox(height: 16),
-
-            // Başlangıç Tarihi
-            _buildStartDatePicker(),
-            SizedBox(height: 16),
-
-            // Bitiş Tarihi (Opsiyonel)
-            _buildEndDatePicker(),
-            SizedBox(height: 16),
-
-            // Görev Durumu
-            _buildDropdown(),
-            SizedBox(height: 24),
-
-            // Görev Kaydetme Butonu
-            _buildSaveButton(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // TextField oluşturma fonksiyonu
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String labelText,
-    int maxLines = 1,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5)],
-      ),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: labelText,
-          labelStyle: TextStyle(color: Colors.deepPurpleAccent),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.all(16),
-        ),
-      ),
-    );
-  }
-
-  // Başlangıç tarihi ve saati seçici
-  Widget _buildStartDatePicker() {
-    // Eğer taskStartDate null ise, o anki tarih ve saatle başla
-    DateTime currentDate = taskStartDate ?? DateTime.now();
-
-    return Row(
-      children: [
-        Icon(Icons.calendar_today, color: Colors.deepPurpleAccent),
-        SizedBox(width: 8),
-        Text(
-          "Başlangıç Zamanı: ${DateFormat('dd MMM yyyy HH:mm').format(currentDate)}",
-          style: TextStyle(color: Colors.deepPurpleAccent),
-        ),
-        IconButton(
-          icon: Icon(Icons.edit, color: Colors.deepPurpleAccent),
-          onPressed: () async {
-            final DateTime? selectedDate = await showDatePicker(
-              context: context,
-              initialDate: currentDate,
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2101),
-            );
-            if (selectedDate != null) {
-              final TimeOfDay? selectedTime = await showTimePicker(
-                context: context,
-                initialTime: TimeOfDay.fromDateTime(currentDate),
-              );
-              if (selectedTime != null) {
-                setState(() {
-                  taskStartDate = DateTime(
-                    selectedDate.year,
-                    selectedDate.month,
-                    selectedDate.day,
-                    selectedTime.hour,
-                    selectedTime.minute,
-                  );
-                });
-              }
-            } else {
-              setState(() {
-                taskStartDate =
-                    currentDate; // Eğer tarih seçilmezse, mevcut tarih ve saat kaydedilsin
-              });
-            }
-          },
-        ),
-      ],
-    );
-  }
-
-  // Bitiş tarihi seçici
-  Widget _buildEndDatePicker() {
-    return Row(
-      children: [
-        Icon(Icons.calendar_today, color: Colors.deepPurpleAccent),
-        SizedBox(width: 8),
-        Text(
-          taskEndDate == null
-              ? "Bitiş Zamanı"
-              : "Bitiş Zamanı: ${DateFormat('dd MMM yyyy HH:mm').format(taskEndDate!)}",
-          style: TextStyle(color: Colors.deepPurpleAccent),
-        ),
-        IconButton(
-          icon: Icon(Icons.edit, color: Colors.deepPurpleAccent),
-          onPressed: () async {
-            final DateTime? selectedDate = await showDatePicker(
-              context: context,
-              initialDate: taskEndDate ?? DateTime.now(),
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2101),
-            );
-            if (selectedDate != null) {
-              final TimeOfDay? selectedTime = await showTimePicker(
-                context: context,
-                initialTime: TimeOfDay.fromDateTime(
-                  taskEndDate ?? DateTime.now(),
-                ),
-              );
-              if (selectedTime != null) {
-                setState(() {
-                  taskEndDate = DateTime(
-                    selectedDate.year,
-                    selectedDate.month,
-                    selectedDate.day,
-                    selectedTime.hour,
-                    selectedTime.minute,
-                  );
-                });
-              }
-            }
-          },
-        ),
-      ],
-    );
-  }
-
-  // Durum seçici
-  Widget _buildDropdown() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5)],
-      ),
-      child: DropdownButton<int>(
-        value: selectedTaskState,
-        isExpanded: true,
-        underline: SizedBox(),
-        onChanged: (newValue) {
-          setState(() {
-            selectedTaskState = newValue;
-          });
-        },
-        items: [
-          DropdownMenuItem(value: 0, child: Text('İptal Edildi')),
-          DropdownMenuItem(value: 1, child: Text('Başlamadı')),
-          DropdownMenuItem(value: 2, child: Text('Devam Ediyor')),
-          DropdownMenuItem(value: 3, child: Text('Tamamlandı')),
-        ],
-      ),
-    );
-  }
-
-  // Kaydetme butonu
-  Widget _buildSaveButton() {
-    return Center(
-      child: ElevatedButton(
-        onPressed: saveTask,
-        style: ElevatedButton.styleFrom(
-          backgroundColor:
-              Colors.deepPurpleAccent, // primary yerine backgroundColor
-          padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        child: Text(
-          widget.taskId.isEmpty ? "Görevi Kaydet" : "Değişiklikleri Kaydet",
-          style: TextStyle(fontSize: 16),
-        ),
-      ),
+  Widget _buildToggleButton(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Text(text),
     );
   }
 }
