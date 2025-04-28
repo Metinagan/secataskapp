@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'deletemultitask.dart';
+
 class EmployeeEditTaskScreen extends StatefulWidget {
   final String taskId;
   final String taskName;
@@ -30,6 +32,7 @@ class _EmployeeEditTaskScreenState extends State<EmployeeEditTaskScreen> {
   late TextEditingController taskNoteController;
   DateTime? taskStartDate;
   DateTime? taskEndDate;
+
   int? selectedTaskState;
 
   @override
@@ -62,6 +65,7 @@ class _EmployeeEditTaskScreenState extends State<EmployeeEditTaskScreen> {
         'taskstate': selectedTaskState ?? 1,
         'note':
             taskNoteController.text.isEmpty ? null : taskNoteController.text,
+        'createdtime': Timestamp.fromDate(DateTime.now()),
       };
 
       final taskRef = FirebaseFirestore.instance
@@ -73,6 +77,13 @@ class _EmployeeEditTaskScreenState extends State<EmployeeEditTaskScreen> {
         await taskRef.add(taskData);
       } else {
         await taskRef.doc(widget.taskId).update(taskData);
+      }
+
+      // Eğer "Devam Ediyor" durumu seçildiyse, diğer görevleri sil
+      if (selectedTaskState == 2) {
+        await TaskService.deleteMultiTask(
+          widget.taskName,
+        ); // Burada fonksiyonu çağırıyoruz
       }
 
       Navigator.pop(context);

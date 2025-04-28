@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 
 class AddMultiUserTaskScreen extends StatefulWidget {
   final String email;
@@ -14,16 +13,13 @@ class AddMultiUserTaskScreen extends StatefulWidget {
 class _AddMultiUserTaskScreenState extends State<AddMultiUserTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   late String _title, _note;
-  late DateTime _startDate;
-  DateTime? _endDate;
-  int? _taskState = 1;
+  late DateTime createdTime = DateTime.now();
   List<String> _allEmails = [];
   List<String> _selectedEmails = [];
 
   @override
   void initState() {
     super.initState();
-    _startDate = DateTime.now();
     _fetchAllUsers();
   }
 
@@ -40,34 +36,6 @@ class _AddMultiUserTaskScreenState extends State<AddMultiUserTaskScreen> {
     });
   }
 
-  Future<void> _pickStartDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _startDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != _startDate) {
-      setState(() {
-        _startDate = picked;
-      });
-    }
-  }
-
-  Future<void> _pickEndDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _endDate ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != _endDate) {
-      setState(() {
-        _endDate = picked;
-      });
-    }
-  }
-
   Future<void> _saveTaskForSelectedUsers() async {
     for (String email in _selectedEmails) {
       await FirebaseFirestore.instance
@@ -76,11 +44,12 @@ class _AddMultiUserTaskScreenState extends State<AddMultiUserTaskScreen> {
           .collection('tasks')
           .add({
             'title': _title,
-            'startdate': Timestamp.fromDate(_startDate),
-            'enddate': _endDate != null ? Timestamp.fromDate(_endDate!) : null,
-            'taskstate': _taskState,
+            'taskstate': 1, // Varsayılan olarak "Başlamamış"
             'ownermail': email,
+            'startdate': null,
+            'enddate': null,
             'note': _note,
+            'createdtime': Timestamp.fromDate(createdTime),
           });
     }
   }
@@ -94,32 +63,6 @@ class _AddMultiUserTaskScreenState extends State<AddMultiUserTaskScreen> {
         title: Text('Çoklu Görev Ekle'),
         backgroundColor: primaryColor,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.save),
-            onPressed: () async {
-              if (_formKey.currentState!.validate() &&
-                  _selectedEmails.isNotEmpty) {
-                _formKey.currentState!.save();
-                try {
-                  await _saveTaskForSelectedUsers();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Görev(ler) başarıyla eklendi!')),
-                  );
-                  Navigator.pop(context);
-                } catch (e) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Hata: $e')));
-                }
-              } else if (_selectedEmails.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lütfen en az bir kullanıcı seçin.')),
-                );
-              }
-            },
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -129,16 +72,25 @@ class _AddMultiUserTaskScreenState extends State<AddMultiUserTaskScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ElevatedButton(
-                  onPressed: () {
-                    _showUserSelectionDialog();
-                  },
-                  child: Text(
-                    'Çalışan Seç',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(primaryColor),
+                // Expanded widget kullanarak buton genişliği ekran boyutuna oranlı olacak şekilde ayarlandı
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _showUserSelectionDialog();
+                      },
+                      child: Text(
+                        'Çalışan Seç',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(
+                          primaryColor,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 SizedBox(height: 16),
@@ -196,97 +148,43 @@ class _AddMultiUserTaskScreenState extends State<AddMultiUserTaskScreen> {
                   onSaved: (value) => _note = value!,
                 ),
                 SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: _pickStartDate,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: primaryColor),
+                // Kaydetme butonunu burada yerleştirdik
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate() &&
+                          _selectedEmails.isNotEmpty) {
+                        _formKey.currentState!.save();
+                        try {
+                          await _saveTaskForSelectedUsers();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Görev(ler) başarıyla eklendi!'),
+                            ),
+                          );
+                          Navigator.pop(context);
+                        } catch (e) {
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+                        }
+                      } else if (_selectedEmails.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Lütfen en az bir kullanıcı seçin.'),
                           ),
-                          child: Column(
-                            children: [
-                              Text(
-                                'Başlangıç Tarihi',
-                                style: TextStyle(color: primaryColor),
-                              ),
-                              Text(
-                                DateFormat('dd MMM yyyy').format(_startDate),
-                                style: TextStyle(color: primaryColor),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                        );
+                      }
+                    },
+                    child: Text(
+                      'Kaydet',
+                      style: TextStyle(color: Colors.white),
                     ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: _pickEndDate,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: primaryColor),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                'Bitiş Tarihi',
-                                style: TextStyle(color: primaryColor),
-                              ),
-                              Text(
-                                _endDate != null
-                                    ? DateFormat(
-                                      'dd MMM yyyy',
-                                    ).format(_endDate!)
-                                    : 'Seçiniz',
-                                style: TextStyle(color: primaryColor),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Görev Durumu',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor,
-                  ),
-                ),
-                DropdownButtonFormField<int>(
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: EdgeInsets.symmetric(
-                      vertical: 15,
-                      horizontal: 20,
+                    style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.all(primaryColor),
                     ),
                   ),
-                  value: _taskState,
-                  items: [
-                    DropdownMenuItem(child: Text('Başlamamış'), value: 1),
-                    DropdownMenuItem(child: Text('Devam Ediyor'), value: 2),
-                    DropdownMenuItem(child: Text('Tamamlandı'), value: 3),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _taskState = value;
-                    });
-                  },
                 ),
               ],
             ),
@@ -315,7 +213,6 @@ class _AddMultiUserTaskScreenState extends State<AddMultiUserTaskScreen> {
                       color: Colors.deepPurple, // Doğrudan renk kullanımı
                     ),
                   ),
-
                   Expanded(
                     child: ListView(
                       children:

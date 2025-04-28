@@ -34,7 +34,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
         .doc('WrgRRDBv5bn9WhP1UESe')
         .collection('users');
 
-    final snapshot = await usersRef.where('role', isEqualTo: 'employee').get();
+    final snapshot = await usersRef.get();
 
     for (var doc in snapshot.docs) {
       employees.add(doc.data());

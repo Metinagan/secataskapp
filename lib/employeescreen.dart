@@ -38,9 +38,12 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
 
       final fetchedTasks =
           snapshot.docs.map((doc) {
-            // ignore: unnecessary_cast
             final data = doc.data() as Map<String, dynamic>;
             data['id'] = doc.id;
+            data['createdtime'] =
+                doc['createdtime']; // Firebase'den 'createdtime' verisini al
+            data['startdate'] =
+                doc['startdate']; // 'startdate' verisini ayrı al
             return data;
           }).toList();
 
@@ -59,46 +62,56 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
     DateTime now = DateTime.now();
 
     if (selectedTimeFilter == 'Bu Hafta') {
-      // Haftanın başlangıcı (Pazartesi) ve sonu (Pazar)
+      // Haftanın başlangıcı Pazartesi 00:00:00, sonu Pazar 23:59:59
       int weekday = now.weekday;
-      DateTime startOfWeek = now.subtract(
-        Duration(days: weekday - 1),
-      ); // Pazartesi
-      DateTime endOfWeek = startOfWeek.add(Duration(days: 6)); // Pazar
+      DateTime startOfWeek = DateTime(
+        now.year,
+        now.month,
+        now.day - (weekday - 1),
+      );
+      DateTime endOfWeek = startOfWeek.add(
+        Duration(days: 6, hours: 23, minutes: 59, seconds: 59),
+      );
 
       filtered =
           filtered.where((task) {
-            DateTime taskDate = (task['startdate'] as Timestamp).toDate();
+            DateTime taskDate = (task['createdtime'] as Timestamp).toDate();
             return taskDate.isAfter(
                   startOfWeek.subtract(Duration(seconds: 1)),
                 ) &&
-                taskDate.isBefore(endOfWeek.add(Duration(days: 1)));
+                taskDate.isBefore(endOfWeek.add(Duration(seconds: 1)));
           }).toList();
     } else if (selectedTimeFilter == 'Bu Ay') {
-      // Bu ayın başı
+      // Ayın başlangıcı 1. gün 00:00:00, sonu son gün 23:59:59
       DateTime startOfMonth = DateTime(now.year, now.month, 1);
-      DateTime endOfMonth = DateTime(now.year, now.month + 1, 0); // Ayın sonu
+      DateTime endOfMonth;
+      if (now.month == 12) {
+        endOfMonth = DateTime(now.year + 1, 1, 0, 23, 59, 59);
+      } else {
+        endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+      }
 
       filtered =
           filtered.where((task) {
-            DateTime taskDate = (task['startdate'] as Timestamp).toDate();
+            DateTime taskDate = (task['craetedtime'] as Timestamp).toDate();
             return taskDate.isAfter(
                   startOfMonth.subtract(Duration(seconds: 1)),
                 ) &&
-                taskDate.isBefore(endOfMonth.add(Duration(days: 1)));
+                taskDate.isBefore(endOfMonth.add(Duration(seconds: 1)));
           }).toList();
     }
+    // "Tüm Zamanlar" ise filtre yok, olduğu gibi bırakıyoruz
 
     if (selectedSort == 'Yeni → Eski') {
       filtered.sort(
-        (a, b) => (b['startdate'] as Timestamp).compareTo(
-          a['startdate'] as Timestamp,
+        (a, b) => (b['craetedtime'] as Timestamp).compareTo(
+          a['craetedtime'] as Timestamp,
         ),
       );
     } else {
       filtered.sort(
-        (a, b) => (a['startdate'] as Timestamp).compareTo(
-          b['startdate'] as Timestamp,
+        (a, b) => (a['craetedtime'] as Timestamp).compareTo(
+          b['craetedtime'] as Timestamp,
         ),
       );
     }
@@ -229,8 +242,10 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
                         itemCount: tasks.length,
                         itemBuilder: (context, index) {
                           final task = tasks[index];
-                          DateTime taskDate =
-                              (task['startdate'] as Timestamp).toDate();
+                          DateTime createdTime =
+                              (task['createdtime'] as Timestamp).toDate();
+                          DateTime? startDate =
+                              (task['startdate'] as Timestamp?)?.toDate();
                           DateTime? endDate =
                               (task['enddate'] as Timestamp?)?.toDate();
 
@@ -296,8 +311,12 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Başlangıç Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(taskDate)}",
+                                    "Oluşturulma Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(createdTime)}",
                                   ),
+                                  if (startDate != null)
+                                    Text(
+                                      "Başlangıç Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(startDate)}",
+                                    ),
                                   if (endDate != null)
                                     Text(
                                       "Bitiş Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(endDate)}",

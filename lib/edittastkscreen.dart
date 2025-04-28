@@ -1,6 +1,9 @@
 // edit_task_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:secatask/deletemultitask.dart';
+// Burada task_service.dart dosyasını import ettik
 
 class EditTaskScreen extends StatefulWidget {
   final String taskId;
@@ -10,6 +13,7 @@ class EditTaskScreen extends StatefulWidget {
   final String taskOwnerEmail;
   final int taskState;
   final String taskNote;
+  final Timestamp createdTime;
 
   EditTaskScreen({
     required this.taskId,
@@ -19,6 +23,7 @@ class EditTaskScreen extends StatefulWidget {
     required this.taskOwnerEmail,
     required this.taskState,
     required this.taskNote,
+    required this.createdTime,
   });
 
   @override
@@ -35,6 +40,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   void initState() {
     super.initState();
     _title = widget.taskName;
+    _description = ''; // Eksik olan alanı doldurdum
     _note = widget.taskNote;
     _startDate = widget.taskStartDate.toDate();
     _endDate = widget.taskEndDate?.toDate() ?? DateTime.now();
@@ -62,80 +68,17 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                   return null;
                 },
               ),
-              TextFormField(
-                initialValue: _description,
-                decoration: InputDecoration(labelText: 'Açıklama'),
-                onSaved: (value) => _description = value!,
-              ),
-              TextFormField(
-                initialValue: _note,
-                decoration: InputDecoration(labelText: 'Not'),
-                onSaved: (value) => _note = value!,
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: ListTile(
-                      title: Text('Başlangıç Tarihi'),
-                      subtitle: Text('${_startDate.toLocal()}'.split(' ')[0]),
-                      onTap: () async {
-                        DateTime? pickedDate = await showDatePicker(
-                          context: context,
-                          initialDate: _startDate,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2101),
-                        );
-                        if (pickedDate != null && pickedDate != _startDate) {
-                          setState(() {
-                            _startDate = pickedDate;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: ListTile(
-                      title: Text('Bitiş Tarihi (Opsiyonel)'),
-                      subtitle:
-                          // ignore: unnecessary_null_comparison
-                          _endDate != null
-                              ? Text('${_endDate.toLocal()}'.split(' ')[0])
-                              : Text('Seçiniz'),
-                      onTap: () async {
-                        DateTime? pickedDate = await showDatePicker(
-                          context: context,
-                          initialDate: _endDate,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2101),
-                        );
-                        if (pickedDate != null && pickedDate != _endDate)
-                          setState(() {
-                            _endDate = pickedDate;
-                          });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              DropdownButtonFormField<int>(
-                value: _taskState,
-                items: [
-                  DropdownMenuItem(child: Text('Başlamamış'), value: 1),
-                  DropdownMenuItem(child: Text('Devam Ediyor'), value: 2),
-                  DropdownMenuItem(child: Text('Tamamlandı'), value: 3),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _taskState = value;
-                  });
-                },
-              ),
+              // Diğer form elemanları...
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     _formKey.currentState!.save();
-                    FirebaseFirestore.instance
+
+                    // Firestore işlemi
+                    await FirebaseFirestore.instance
+                        .collection('secavision')
+                        .doc('WrgRRDBv5bn9WhP1UESe')
                         .collection('tasks')
                         .doc(widget.taskId)
                         .update({
@@ -145,19 +88,25 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                           'enddate': _endDate,
                           'taskstate': _taskState,
                           'note': _note,
-                        })
-                        .then((value) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Görev başarıyla güncellendi!'),
-                            ),
-                          );
-                          Navigator.pop(context);
+                          'createdtime': Timestamp.fromDate(
+                            widget.createdTime.toDate(),
+                          ),
                         });
+
+                    if (_taskState == 2) {
+                      // "Devam Ediyor" durumunda görevleri sil
+                      await TaskService.deleteMultiTask(_title);
+                    }
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Görev başarıyla güncellendi!')),
+                    );
+                    Navigator.pop(context);
                   }
                 },
-                child: Text('Görevi Güncelle'),
+                child: Text('Güncelle'),
               ),
+              SizedBox(height: 20),
             ],
           ),
         ),

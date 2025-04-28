@@ -58,22 +58,29 @@ class _TaskScreenState extends State<TaskScreen> {
     DateTime startOfWeek;
     DateTime startOfMonth;
 
-    // Pazartesi günü için tarih hesaplama
+    // Pazartesi günü için tarih hesaplama, saat 00:01'e ayarlandı
     startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    startOfWeek = DateTime(
+      startOfWeek.year,
+      startOfWeek.month,
+      startOfWeek.day,
+      0,
+      1,
+    );
 
-    // Bu ayın başlangıç tarihi
-    startOfMonth = DateTime(now.year, now.month, 1);
+    // Bu ayın başlangıç tarihi, saat 00:01'e ayarlandı
+    startOfMonth = DateTime(now.year, now.month, 1, 0, 1);
 
     var filteredTasks =
         allTasks.where((task) {
-          DateTime taskDate = (task['startdate'] as Timestamp).toDate();
+          DateTime taskDate = (task['createdtime'] as Timestamp).toDate();
 
           if (selectedFilter == 'week') {
-            // Pazartesi gününden itibaren bugüne kadar olan görevler
+            // Pazartesi günü 00:01'den bugüne kadar olan görevler
             return taskDate.isAfter(startOfWeek) &&
                 taskDate.isBefore(now.add(Duration(days: 1)));
           } else if (selectedFilter == 'month') {
-            // Bu ayın başından bugüne kadar olan görevler
+            // Ayın 1. günü 00:01'den bugüne kadar olan görevler
             return taskDate.isAfter(startOfMonth) &&
                 taskDate.isBefore(now.add(Duration(days: 1)));
           }
@@ -227,7 +234,7 @@ class _TaskScreenState extends State<TaskScreen> {
                       itemBuilder: (context, index) {
                         final task = tasks[index];
                         DateTime taskDate =
-                            (task['startdate'] as Timestamp).toDate();
+                            (task['createdtime'] as Timestamp).toDate();
                         DateTime? endDate =
                             (task['enddate'] as Timestamp?)?.toDate();
 
