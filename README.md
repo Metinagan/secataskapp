@@ -1,16 +1,13 @@
-# secatask
+# Task Management App
 
-A new Flutter project.
+This Flutter app allows users to manage their tasks with integration to Firebase Firestore. Users can add, list, filter, and delete tasks.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **User Management**: Users can log in with their name and email address.
+- **Add Tasks**: Users can add new tasks with a title, description, and date.
+- **List Tasks**: Users can view their own tasks in a list.
+- **Task Filtering**: Tasks can be filtered by week, month, or all-time.
+- **Delete Tasks**: Users can delete their tasks.
+- **Firebase Integration**: The app is integrated with Firebase Firestore to store task data.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
