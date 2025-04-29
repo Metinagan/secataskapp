@@ -23,7 +23,11 @@ class _StepListScreenState extends State<StepListScreen> {
             .orderBy('createdtime')
             .get();
 
-    return stepsSnapshot.docs.map((doc) => doc.data()).toList();
+    return stepsSnapshot.docs.map((doc) {
+      final data = doc.data();
+      data['stepId'] = doc.id; // ID'yi ekle
+      return data;
+    }).toList();
   }
 
   Duration calculateWorkDuration(DateTime start, DateTime end) {
@@ -58,20 +62,16 @@ class _StepListScreenState extends State<StepListScreen> {
         totalDuration += actualEnd.difference(actualStart);
       }
 
-      current = DateTime(current.year, current.month, current.day + 1, 0, 0);
+      current = DateTime(current.year, current.month, current.day + 1);
     }
 
-    // Yuvarlama işlemi: Saniyeleri 60'a yuvarla
     final totalMinutes = totalDuration.inMinutes;
     final totalSeconds = totalDuration.inSeconds;
     final remainingSeconds = totalSeconds % 60;
 
-    // Eğer saniye 30'dan büyükse, dakikayı 1 artırıyoruz
-    if (remainingSeconds > 0) {
-      return Duration(minutes: totalMinutes + 1);
-    } else {
-      return Duration(minutes: totalMinutes);
-    }
+    return remainingSeconds > 0
+        ? Duration(minutes: totalMinutes + 1)
+        : Duration(minutes: totalMinutes);
   }
 
   String formatDuration(Duration duration) {
@@ -96,6 +96,7 @@ class _StepListScreenState extends State<StepListScreen> {
     DateTime endDate,
   ) async {
     try {
+      // Veritabanına adım ekleyin
       await FirebaseFirestore.instance
           .collection('secavision')
           .doc('WrgRRDBv5bn9WhP1UESe')
@@ -104,11 +105,14 @@ class _StepListScreenState extends State<StepListScreen> {
           .collection('steps')
           .add({
             'note': note,
-            'startdate': Timestamp.fromDate(startDate), // Timestamp format
-            'enddate': Timestamp.fromDate(endDate), // Timestamp format
+            'startdate': Timestamp.fromDate(startDate),
+            'enddate': Timestamp.fromDate(endDate),
             'createdtime': Timestamp.now(),
           });
       print("Adım başarıyla eklendi!");
+      setState(() {
+        // Adım eklendikten sonra ekranı yeniden yüklemek için setState çağrısı yapıyoruz
+      });
     } catch (e) {
       print("Error adding step: $e");
     }
@@ -125,6 +129,7 @@ class _StepListScreenState extends State<StepListScreen> {
           .doc(stepId)
           .delete();
       print("Adım başarıyla silindi!");
+      setState(() {});
     } catch (e) {
       print("Error deleting step: $e");
     }
@@ -140,6 +145,13 @@ class _StepListScreenState extends State<StepListScreen> {
         ),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            // Geri butonuna tıklandığında sayfayı 'updated' ile geri gönder
+            Navigator.pop(context, 'updated');
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add, color: Colors.white),
@@ -149,6 +161,7 @@ class _StepListScreenState extends State<StepListScreen> {
           ),
         ],
       ),
+
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: fetchSteps(),
         builder: (context, snapshot) {
@@ -170,8 +183,7 @@ class _StepListScreenState extends State<StepListScreen> {
               final startDate = (step['startdate'] as Timestamp?)?.toDate();
               final endDate = (step['enddate'] as Timestamp?)?.toDate();
               final note = step['note'] ?? '';
-              final stepId =
-                  step['stepId'] ?? ''; // Assuming you store the document ID
+              final stepId = step['stepId'] ?? '';
 
               Duration? workDuration;
               if (startDate != null && endDate != null) {
@@ -185,7 +197,10 @@ class _StepListScreenState extends State<StepListScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 16,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -197,22 +212,7 @@ class _StepListScreenState extends State<StepListScreen> {
                           color: Colors.deepPurple,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      if (createdDate != null)
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.add_circle_outline,
-                              color: Colors.grey,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Oluşturuldu: ${DateFormat('dd MMM yyyy HH:mm').format(createdDate)}",
-                              style: TextStyle(color: Colors.grey[700]),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 6),
                       if (startDate != null)
                         Row(
                           children: [
@@ -245,7 +245,7 @@ class _StepListScreenState extends State<StepListScreen> {
                         ),
                       if (workDuration != null)
                         Padding(
-                          padding: const EdgeInsets.only(top: 12.0),
+                          padding: const EdgeInsets.only(top: 8.0),
                           child: Row(
                             children: [
                               const Icon(
@@ -261,34 +261,29 @@ class _StepListScreenState extends State<StepListScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                              const Spacer(), // Bu, butonu sağa itecektir
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  deleteStep(stepId);
+                                },
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
+                                ),
+                                label: const Text(
+                                  "Sil",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          // ElevatedButton with text and icon
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              deleteStep(stepId);
-                            },
-                            icon: const Icon(Icons.delete, color: Colors.white),
-                            label: const Text(
-                              "Sil",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Colors.red, // Red color for the button
-                              foregroundColor:
-                                  Colors.white, // Color for the text and icon
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -302,10 +297,10 @@ class _StepListScreenState extends State<StepListScreen> {
 
   Future<void> _showAddStepDialog(BuildContext context) async {
     String note = '';
-    DateTime startDate = DateTime.now();
-    DateTime endDate = DateTime.now().add(Duration(days: 1));
-    TimeOfDay startTime = TimeOfDay(hour: 9, minute: 0);
-    TimeOfDay endTime = TimeOfDay(hour: 9, minute: 0);
+    DateTime selectedStartDate = DateTime.now();
+    DateTime selectedEndDate = DateTime.now().add(const Duration(days: 1));
+    TimeOfDay startTime = const TimeOfDay(hour: 9, minute: 0);
+    TimeOfDay endTime = const TimeOfDay(hour: 9, minute: 0);
 
     TextEditingController startDateController = TextEditingController();
     TextEditingController endDateController = TextEditingController();
@@ -314,50 +309,58 @@ class _StepListScreenState extends State<StepListScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Adım Ekle"),
-          content: Container(
+          title: const Text("Adım Ekle"),
+          content: SizedBox(
             width: 300,
             height: 350,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  decoration: InputDecoration(labelText: "Not"),
-                  onChanged: (value) {
-                    note = value;
-                  },
+                  decoration: const InputDecoration(labelText: "Not"),
+                  onChanged: (value) => note = value,
                 ),
                 GestureDetector(
                   onTap: () async {
-                    DateTime? pickedDate = await showDatePicker(
+                    final date = await showDatePicker(
                       context: context,
-                      initialDate: startDate,
+                      initialDate: selectedStartDate,
                       firstDate: DateTime(2000),
                       lastDate: DateTime(2101),
                     );
-                    if (pickedDate != null) {
-                      setState(() {
-                        startDate = pickedDate;
-                      });
-                      TimeOfDay? pickedTime = await showTimePicker(
+                    if (date != null) {
+                      final time = await showTimePicker(
                         context: context,
                         initialTime: startTime,
+                        builder: (BuildContext context, Widget? child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              alwaysUse24HourFormat:
+                                  true, // 24 saatlik formatı burada aktifleştiriyoruz
+                            ),
+                            child: child!,
+                          );
+                        },
                       );
-                      if (pickedTime != null) {
-                        setState(() {
-                          startTime = pickedTime;
-                        });
-                        startDateController.text =
-                            DateFormat('dd MMM yyyy').format(startDate) +
-                            ' ' +
-                            startTime.format(context);
+                      if (time != null) {
+                        selectedStartDate = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          time.hour,
+                          time.minute,
+                        );
+                        startTime = time;
+                        startDateController.text = DateFormat(
+                          'dd MMM yyyy HH:mm',
+                        ).format(selectedStartDate);
                       }
                     }
                   },
                   child: AbsorbPointer(
                     child: TextField(
                       controller: startDateController,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: "Başlangıç Tarihi",
                       ),
                     ),
@@ -365,35 +368,47 @@ class _StepListScreenState extends State<StepListScreen> {
                 ),
                 GestureDetector(
                   onTap: () async {
-                    DateTime? pickedDate = await showDatePicker(
+                    final date = await showDatePicker(
                       context: context,
-                      initialDate: endDate,
+                      initialDate: selectedEndDate,
                       firstDate: DateTime(2000),
                       lastDate: DateTime(2101),
                     );
-                    if (pickedDate != null) {
-                      setState(() {
-                        endDate = pickedDate;
-                      });
-                      TimeOfDay? pickedTime = await showTimePicker(
+                    if (date != null) {
+                      final time = await showTimePicker(
                         context: context,
                         initialTime: endTime,
+                        builder: (BuildContext context, Widget? child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              alwaysUse24HourFormat:
+                                  true, // 24 saatlik format burada da geçerli
+                            ),
+                            child: child!,
+                          );
+                        },
                       );
-                      if (pickedTime != null) {
-                        setState(() {
-                          endTime = pickedTime;
-                        });
-                        endDateController.text =
-                            DateFormat('dd MMM yyyy').format(endDate) +
-                            ' ' +
-                            endTime.format(context);
+                      if (time != null) {
+                        selectedEndDate = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          time.hour,
+                          time.minute,
+                        );
+                        endTime = time;
+                        endDateController.text = DateFormat(
+                          'dd MMM yyyy HH:mm',
+                        ).format(selectedEndDate);
                       }
                     }
                   },
                   child: AbsorbPointer(
                     child: TextField(
                       controller: endDateController,
-                      decoration: InputDecoration(labelText: "Bitiş Tarihi"),
+                      decoration: const InputDecoration(
+                        labelText: "Bitiş Tarihi",
+                      ),
                     ),
                   ),
                 ),
@@ -402,18 +417,20 @@ class _StepListScreenState extends State<StepListScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text("İptal"),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("İptal"),
             ),
             TextButton(
               onPressed: () async {
-                // Firebase'e veri kaydetme
-                await addStep(widget.taskId, note, startDate, endDate);
+                await addStep(
+                  widget.taskId,
+                  note,
+                  selectedStartDate,
+                  selectedEndDate,
+                );
                 Navigator.pop(context);
               },
-              child: Text("Kaydet"),
+              child: const Text("Kaydet"),
             ),
           ],
         );
