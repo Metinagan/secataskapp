@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:secatask/stepsScreen.dart';
 
 class TaskScreen extends StatefulWidget {
   final String fullName;
@@ -297,39 +298,64 @@ class _TaskScreenState extends State<TaskScreen> {
                                   Text("NOT! : ${task['note']}"),
                               ],
                             ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                bool? confirmDelete = await showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: Text(
-                                        "${task['title']} silmek istiyor musunuz?",
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Colors.deepPurple,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) => StepListScreen(
+                                              taskId: task['id'],
+                                            ), // Buraya gideceğin ekranı yaz
                                       ),
-                                      actions: <Widget>[
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.of(
-                                                context,
-                                              ).pop(false),
-                                          child: const Text('Hayır'),
-                                        ),
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.of(
-                                                context,
-                                              ).pop(true),
-                                          child: const Text('Evet'),
-                                        ),
-                                      ],
                                     );
                                   },
-                                );
-                                if (confirmDelete == true) {
-                                  await deleteTask(task['id']);
-                                }
-                              },
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () async {
+                                    bool? confirmDelete = await showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: Text(
+                                            "${task['title']} silmek istiyor musunuz?",
+                                          ),
+                                          actions: <Widget>[
+                                            TextButton(
+                                              onPressed:
+                                                  () => Navigator.of(
+                                                    context,
+                                                  ).pop(false),
+                                              child: const Text('Hayır'),
+                                            ),
+                                            TextButton(
+                                              onPressed:
+                                                  () => Navigator.of(
+                                                    context,
+                                                  ).pop(true),
+                                              child: const Text('Evet'),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                    if (confirmDelete == true) {
+                                      await deleteTask(task['id']);
+                                    }
+                                  },
+                                ),
+                              ],
                             ),
                           ),
                         );
