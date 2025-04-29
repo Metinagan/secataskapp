@@ -2,18 +2,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class StepListScreen extends StatelessWidget {
+class StepListScreen extends StatefulWidget {
   final String taskId;
 
   const StepListScreen({Key? key, required this.taskId}) : super(key: key);
 
+  @override
+  _StepListScreenState createState() => _StepListScreenState();
+}
+
+class _StepListScreenState extends State<StepListScreen> {
   Future<List<Map<String, dynamic>>> fetchSteps() async {
     final stepsSnapshot =
         await FirebaseFirestore.instance
             .collection('secavision')
             .doc('WrgRRDBv5bn9WhP1UESe')
             .collection('tasks')
-            .doc(taskId)
+            .doc(widget.taskId)
             .collection('steps')
             .orderBy('createdtime')
             .get();
@@ -28,7 +33,6 @@ class StepListScreen extends StatelessWidget {
     if (start.isAfter(end)) return Duration.zero;
 
     Duration totalDuration = Duration.zero;
-
     DateTime current = start;
 
     while (current.isBefore(end)) {
@@ -54,15 +58,20 @@ class StepListScreen extends StatelessWidget {
         totalDuration += actualEnd.difference(actualStart);
       }
 
-      // Ertesi güne geç
       current = DateTime(current.year, current.month, current.day + 1, 0, 0);
     }
 
-    // Saat ve dakika farkı alıp sadece bunları döndürüyoruz, saniyeleri sıfırlıyoruz.
-    final hours = totalDuration.inMinutes ~/ 60;
-    final minutes = (totalDuration.inMinutes % 60) + 1;
+    // Yuvarlama işlemi: Saniyeleri 60'a yuvarla
+    final totalMinutes = totalDuration.inMinutes;
+    final totalSeconds = totalDuration.inSeconds;
+    final remainingSeconds = totalSeconds % 60;
 
-    return Duration(hours: hours, minutes: minutes);
+    // Eğer saniye 30'dan büyükse, dakikayı 1 artırıyoruz
+    if (remainingSeconds > 0) {
+      return Duration(minutes: totalMinutes + 1);
+    } else {
+      return Duration(minutes: totalMinutes);
+    }
   }
 
   String formatDuration(Duration duration) {
@@ -80,6 +89,47 @@ class StepListScreen extends StatelessWidget {
     }
   }
 
+  Future<void> addStep(
+    String taskId,
+    String note,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('secavision')
+          .doc('WrgRRDBv5bn9WhP1UESe')
+          .collection('tasks')
+          .doc(taskId)
+          .collection('steps')
+          .add({
+            'note': note,
+            'startdate': Timestamp.fromDate(startDate), // Timestamp format
+            'enddate': Timestamp.fromDate(endDate), // Timestamp format
+            'createdtime': Timestamp.now(),
+          });
+      print("Adım başarıyla eklendi!");
+    } catch (e) {
+      print("Error adding step: $e");
+    }
+  }
+
+  Future<void> deleteStep(String stepId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('secavision')
+          .doc('WrgRRDBv5bn9WhP1UESe')
+          .collection('tasks')
+          .doc(widget.taskId)
+          .collection('steps')
+          .doc(stepId)
+          .delete();
+      print("Adım başarıyla silindi!");
+    } catch (e) {
+      print("Error deleting step: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,6 +140,14 @@ class StepListScreen extends StatelessWidget {
         ),
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add, color: Colors.white),
+            onPressed: () {
+              _showAddStepDialog(context);
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: fetchSteps(),
@@ -112,6 +170,8 @@ class StepListScreen extends StatelessWidget {
               final startDate = (step['startdate'] as Timestamp?)?.toDate();
               final endDate = (step['enddate'] as Timestamp?)?.toDate();
               final note = step['note'] ?? '';
+              final stepId =
+                  step['stepId'] ?? ''; // Assuming you store the document ID
 
               Duration? workDuration;
               if (startDate != null && endDate != null) {
@@ -204,6 +264,31 @@ class StepListScreen extends StatelessWidget {
                             ],
                           ),
                         ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          // ElevatedButton with text and icon
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              deleteStep(stepId);
+                            },
+                            icon: const Icon(Icons.delete, color: Colors.white),
+                            label: const Text(
+                              "Sil",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  Colors.red, // Red color for the button
+                              foregroundColor:
+                                  Colors.white, // Color for the text and icon
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -212,6 +297,127 @@ class StepListScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Future<void> _showAddStepDialog(BuildContext context) async {
+    String note = '';
+    DateTime startDate = DateTime.now();
+    DateTime endDate = DateTime.now().add(Duration(days: 1));
+    TimeOfDay startTime = TimeOfDay(hour: 9, minute: 0);
+    TimeOfDay endTime = TimeOfDay(hour: 9, minute: 0);
+
+    TextEditingController startDateController = TextEditingController();
+    TextEditingController endDateController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Adım Ekle"),
+          content: Container(
+            width: 300,
+            height: 350,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  decoration: InputDecoration(labelText: "Not"),
+                  onChanged: (value) {
+                    note = value;
+                  },
+                ),
+                GestureDetector(
+                  onTap: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: startDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2101),
+                    );
+                    if (pickedDate != null) {
+                      setState(() {
+                        startDate = pickedDate;
+                      });
+                      TimeOfDay? pickedTime = await showTimePicker(
+                        context: context,
+                        initialTime: startTime,
+                      );
+                      if (pickedTime != null) {
+                        setState(() {
+                          startTime = pickedTime;
+                        });
+                        startDateController.text =
+                            DateFormat('dd MMM yyyy').format(startDate) +
+                            ' ' +
+                            startTime.format(context);
+                      }
+                    }
+                  },
+                  child: AbsorbPointer(
+                    child: TextField(
+                      controller: startDateController,
+                      decoration: InputDecoration(
+                        labelText: "Başlangıç Tarihi",
+                      ),
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: endDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2101),
+                    );
+                    if (pickedDate != null) {
+                      setState(() {
+                        endDate = pickedDate;
+                      });
+                      TimeOfDay? pickedTime = await showTimePicker(
+                        context: context,
+                        initialTime: endTime,
+                      );
+                      if (pickedTime != null) {
+                        setState(() {
+                          endTime = pickedTime;
+                        });
+                        endDateController.text =
+                            DateFormat('dd MMM yyyy').format(endDate) +
+                            ' ' +
+                            endTime.format(context);
+                      }
+                    }
+                  },
+                  child: AbsorbPointer(
+                    child: TextField(
+                      controller: endDateController,
+                      decoration: InputDecoration(labelText: "Bitiş Tarihi"),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text("İptal"),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Firebase'e veri kaydetme
+                await addStep(widget.taskId, note, startDate, endDate);
+                Navigator.pop(context);
+              },
+              child: Text("Kaydet"),
+            ),
+          ],
+        );
+      },
     );
   }
 }

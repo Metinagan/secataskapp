@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:secatask/employeeEditTaskScreen.dart';
+import 'package:secatask/stepsScreen.dart';
 
 class MyEmployeeTasksScreen extends StatefulWidget {
   final String name;
@@ -281,7 +282,10 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
                             elevation: 3,
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             child: ListTile(
-                              leading: Icon(taskIcon, color: taskColor),
+                              leading: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [Icon(taskIcon, color: taskColor)],
+                              ),
                               title: GestureDetector(
                                 onTap: () {
                                   Navigator.push(
@@ -326,40 +330,65 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
                                     Text("NOT! : ${task['note']}"),
                                 ],
                               ),
-                              trailing: IconButton(
-                                icon: Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: Text("Silme Onayı"),
-                                        content: Text(
-                                          "Bu görevi silmek istediğinizden emin misiniz?",
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed:
-                                                () => Navigator.pop(context),
-                                            child: Text("İptal"),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              deleteTask(task['id']);
-                                              Navigator.pop(context);
-                                            },
-                                            child: Text(
-                                              "Sil",
-                                              style: TextStyle(
-                                                color: Colors.red,
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.navigate_next,
+                                      color: Colors.deepPurpleAccent,
+                                    ),
+                                    onPressed: () {
+                                      var taskId = task['id'];
+                                      // Sayfaya yönlendirme işlemi
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) => StepListScreen(
+                                                taskId: taskId,
                                               ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       );
                                     },
-                                  );
-                                },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: Text("Silme Onayı"),
+                                            content: Text(
+                                              "Bu görevi silmek istediğinizden emin misiniz?",
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed:
+                                                    () =>
+                                                        Navigator.pop(context),
+                                                child: Text("İptal"),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  deleteTask(task['id']);
+                                                  Navigator.pop(context);
+                                                },
+                                                child: Text(
+                                                  "Sil",
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           );
