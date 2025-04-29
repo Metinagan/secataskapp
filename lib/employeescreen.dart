@@ -93,7 +93,7 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
 
       filtered =
           filtered.where((task) {
-            DateTime taskDate = (task['craetedtime'] as Timestamp).toDate();
+            DateTime taskDate = (task['createdtime'] as Timestamp).toDate();
             return taskDate.isAfter(
                   startOfMonth.subtract(Duration(seconds: 1)),
                 ) &&
@@ -104,14 +104,14 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
 
     if (selectedSort == 'Yeni → Eski') {
       filtered.sort(
-        (a, b) => (b['craetedtime'] as Timestamp).compareTo(
-          a['craetedtime'] as Timestamp,
+        (a, b) => (b['createdtime'] as Timestamp).compareTo(
+          a['createdtime'] as Timestamp,
         ),
       );
     } else {
       filtered.sort(
-        (a, b) => (a['craetedtime'] as Timestamp).compareTo(
-          b['craetedtime'] as Timestamp,
+        (a, b) => (a['createdtime'] as Timestamp).compareTo(
+          b['createdtime'] as Timestamp,
         ),
       );
     }

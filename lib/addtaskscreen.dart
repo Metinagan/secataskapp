@@ -57,6 +57,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   Widget build(BuildContext context) {
     Color primaryColor = Colors.deepPurple;
 
+    DateTime createdTime = DateTime.now();
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Görev Ekle'),
@@ -83,6 +85,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         'taskstate': _taskState,
                         'ownermail': widget.email,
                         'note': _note,
+                        'createdtime': Timestamp.fromDate(createdTime),
                       });
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Görev başarıyla eklendi!')),
@@ -275,6 +278,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                               'taskstate': _taskState,
                               'ownermail': widget.email,
                               'note': _note,
+                              'createdtime': Timestamp.fromDate(createdTime),
                             });
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Görev başarıyla eklendi!')),

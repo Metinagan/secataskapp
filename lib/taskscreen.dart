@@ -73,7 +73,7 @@ class _TaskScreenState extends State<TaskScreen> {
 
     var filteredTasks =
         allTasks.where((task) {
-          DateTime taskDate = (task['createdtime'] as Timestamp).toDate();
+          DateTime? taskDate = (task['createdtime'] as Timestamp).toDate();
 
           if (selectedFilter == 'week') {
             // Pazartesi günü 00:01'den bugüne kadar olan görevler
@@ -90,14 +90,14 @@ class _TaskScreenState extends State<TaskScreen> {
     // Sıralama
     if (selectedOrder == 'newest') {
       filteredTasks.sort(
-        (a, b) => (b['startdate'] as Timestamp).compareTo(
-          a['startdate'] as Timestamp,
+        (a, b) => (b['createdtime'] as Timestamp).compareTo(
+          a['createdtime'] as Timestamp,
         ),
       );
     } else if (selectedOrder == 'oldest') {
       filteredTasks.sort(
-        (a, b) => (a['startdate'] as Timestamp).compareTo(
-          b['startdate'] as Timestamp,
+        (a, b) => (a['createdtime'] as Timestamp).compareTo(
+          b['createdtime'] as Timestamp,
         ),
       );
     }
@@ -233,8 +233,10 @@ class _TaskScreenState extends State<TaskScreen> {
                       itemCount: tasks.length,
                       itemBuilder: (context, index) {
                         final task = tasks[index];
-                        DateTime taskDate =
+                        DateTime? createDate =
                             (task['createdtime'] as Timestamp).toDate();
+                        DateTime? taskDate =
+                            (task['startdate'] as Timestamp).toDate();
                         DateTime? endDate =
                             (task['enddate'] as Timestamp?)?.toDate();
 
@@ -280,6 +282,9 @@ class _TaskScreenState extends State<TaskScreen> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Text(
+                                  "Oluşturulma Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(createDate)}",
+                                ),
                                 Text(
                                   "Başlangıç Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(taskDate)}",
                                 ),
@@ -355,13 +360,13 @@ class _TaskAddSheetState extends State<TaskAddSheet> {
   final _formKey = GlobalKey<FormState>();
   final titleController = TextEditingController();
   final descController = TextEditingController();
-  DateTime selectedDateTime = DateTime.now();
+  DateTime? selectedDateTime;
   String note = "";
 
   Future<void> _pickDateTime() async {
     final date = await showDatePicker(
       context: context,
-      initialDate: selectedDateTime,
+      initialDate: DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
@@ -370,7 +375,7 @@ class _TaskAddSheetState extends State<TaskAddSheet> {
 
     final time = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(selectedDateTime),
+      initialTime: TimeOfDay.fromDateTime(DateTime.now()),
     );
 
     if (time == null) return;
@@ -388,17 +393,19 @@ class _TaskAddSheetState extends State<TaskAddSheet> {
 
   Future<void> saveTask() async {
     if (_formKey.currentState!.validate()) {
+      if (selectedDateTime == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lütfen bir tarih seçin")));
+        return;
+      }
+
       final tasksRef = FirebaseFirestore.instance
           .collection('secavision')
           .doc('WrgRRDBv5bn9WhP1UESe')
           .collection('tasks');
 
-      DateTime? endDate = selectedDateTime.add(const Duration(hours: 1));
-
-      // ignore: unnecessary_null_comparison, prefer_conditional_assignment
-      if (endDate == null) {
-        endDate = null;
-      }
+      DateTime endDate = selectedDateTime!.add(const Duration(hours: 1));
 
       await tasksRef.add({
         'ownermail': widget.email,
@@ -407,6 +414,7 @@ class _TaskAddSheetState extends State<TaskAddSheet> {
         'startdate': selectedDateTime,
         'enddate': endDate,
         'taskstate': 1,
+        'createdtime': DateTime.now(),
       });
 
       widget.onTaskAdded();
@@ -461,12 +469,17 @@ class _TaskAddSheetState extends State<TaskAddSheet> {
               const SizedBox(height: 12),
               ListTile(
                 title: Text(
-                  DateFormat('dd MMM yyyy HH:mm').format(selectedDateTime),
+                  selectedDateTime != null
+                      ? DateFormat(
+                        'dd MMM yyyy HH:mm',
+                      ).format(selectedDateTime!)
+                      : "Tarih seçilmedi",
                   style: TextStyle(color: Colors.deepPurple),
                 ),
                 trailing: Icon(Icons.calendar_today, color: Colors.deepPurple),
                 onTap: _pickDateTime,
               ),
+
               const SizedBox(height: 12),
               TextFormField(
                 controller: descController,
