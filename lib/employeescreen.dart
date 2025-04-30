@@ -38,7 +38,7 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
 
       final fetchedTasks =
           snapshot.docs.map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             data['id'] = doc.id;
             data['createdtime'] =
                 doc['createdtime']; // Firebase'den 'createdtime' verisini al
@@ -193,7 +193,7 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
       Duration totalDuration = Duration.zero;
 
       for (var step in snapshot.docs) {
-        final stepData = step.data() as Map<String, dynamic>;
+        final stepData = step.data();
         DateTime startDate = (stepData['startdate'] as Timestamp).toDate();
         DateTime endDate = (stepData['enddate'] as Timestamp).toDate();
         totalDuration += calculateWorkDuration(startDate, endDate);

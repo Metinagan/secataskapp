@@ -179,7 +179,7 @@ class _StepListScreenState extends State<StepListScreen> {
             itemCount: steps.length,
             itemBuilder: (context, index) {
               final step = steps[index];
-              final createdDate = (step['createdtime'] as Timestamp?)?.toDate();
+              (step['createdtime'] as Timestamp?)?.toDate();
               final startDate = (step['startdate'] as Timestamp?)?.toDate();
               final endDate = (step['enddate'] as Timestamp?)?.toDate();
               final note = step['note'] ?? '';
