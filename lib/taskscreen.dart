@@ -120,6 +120,92 @@ class _TaskScreenState extends State<TaskScreen> {
     refreshTasks();
   }
 
+  Duration calculateWorkDuration(DateTime start, DateTime end) {
+    final workDayStart = TimeOfDay(hour: 8, minute: 0);
+    final workDayEnd = TimeOfDay(hour: 18, minute: 0);
+
+    if (start.isAfter(end)) return Duration.zero;
+
+    Duration totalDuration = Duration.zero;
+    DateTime current = start;
+
+    while (current.isBefore(end)) {
+      final dayStart = DateTime(
+        current.year,
+        current.month,
+        current.day,
+        workDayStart.hour,
+        workDayStart.minute,
+      );
+      final dayEnd = DateTime(
+        current.year,
+        current.month,
+        current.day,
+        workDayEnd.hour,
+        workDayEnd.minute,
+      );
+
+      final actualStart = current.isBefore(dayStart) ? dayStart : current;
+      final actualEnd = end.isBefore(dayEnd) ? end : dayEnd;
+
+      if (actualEnd.isAfter(actualStart)) {
+        totalDuration += actualEnd.difference(actualStart);
+      }
+
+      current = DateTime(current.year, current.month, current.day + 1, 0, 0);
+    }
+
+    // Yuvarlama işlemi: Saniyeleri 60'a yuvarla
+    final totalMinutes = totalDuration.inMinutes;
+    final totalSeconds = totalDuration.inSeconds;
+    final remainingSeconds = totalSeconds % 60;
+
+    // Eğer saniye 30'dan büyükse, dakikayı 1 artırıyoruz
+    if (remainingSeconds > 0) {
+      return Duration(minutes: totalMinutes + 1);
+    } else {
+      return Duration(minutes: totalMinutes);
+    }
+  }
+
+  Future<Duration> getTotalStepsDuration(String taskId) async {
+    try {
+      final stepsRef = FirebaseFirestore.instance
+          .collection('secavision')
+          .doc('WrgRRDBv5bn9WhP1UESe')
+          .collection('tasks')
+          .doc(taskId)
+          .collection('steps');
+
+      final snapshot = await stepsRef.get();
+      Duration totalDuration = Duration.zero;
+
+      for (var step in snapshot.docs) {
+        final stepData = step.data();
+        DateTime startDate = (stepData['startdate'] as Timestamp).toDate();
+        DateTime endDate = (stepData['enddate'] as Timestamp).toDate();
+        totalDuration += calculateWorkDuration(startDate, endDate);
+      }
+
+      return totalDuration;
+    } catch (e) {
+      print("Error fetching steps: $e");
+      return Duration.zero;
+    }
+  }
+
+  String getDurationString(Duration duration) {
+    int hours = duration.inHours;
+    int minutes = duration.inMinutes % 60;
+    return '$hours saat $minutes dakika';
+  }
+
+  String formatDuration(Duration duration) {
+    int hours = duration.inHours;
+    int minutes = duration.inMinutes % 60;
+    return '$hours saat $minutes dakika';
+  }
+
   @override
   Widget build(BuildContext context) {
     final tasks = getFilteredTasks();
@@ -296,6 +382,44 @@ class _TaskScreenState extends State<TaskScreen> {
                                 if (task['note'] != null &&
                                     task['note'].isNotEmpty)
                                   Text("NOT! : ${task['note']}"),
+                                if (taskDate != null && endDate != null)
+                                  FutureBuilder<Duration>(
+                                    future: getTotalStepsDuration(task['id']),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return const CircularProgressIndicator();
+                                      }
+
+                                      if (snapshot.hasError) {
+                                        return const Text(
+                                          "Süre hesaplanamadı.",
+                                        );
+                                      }
+
+                                      Duration totalStepsDuration =
+                                          snapshot.data ?? Duration.zero;
+
+                                      return Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.access_time,
+                                            color: Colors.orange,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            "Çalışma Süresi: ${formatDuration(totalStepsDuration)}",
+                                            style: TextStyle(
+                                              color:
+                                                  Colors.orange, // Turuncu renk
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
                               ],
                             ),
                             trailing: Row(
