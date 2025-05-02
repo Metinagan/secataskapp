@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:secatask/addtaskscreen.dart';
 import 'package:secatask/employeeEditTaskScreen.dart';
 import 'package:secatask/stepsScreen.dart';
 
@@ -216,17 +217,17 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(60),
+        preferredSize: const Size.fromHeight(60),
         child: AppBar(
           backgroundColor: Colors.deepPurpleAccent,
-          shape: RoundedRectangleBorder(
+          shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(30),
               bottomRight: Radius.circular(30),
             ),
           ),
           flexibleSpace: Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Colors.deepPurpleAccent, Colors.purple],
                 begin: Alignment.topLeft,
@@ -237,15 +238,36 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
           title: Center(
             child: Text(
               widget.name,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 32,
               ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddTaskScreen(email: widget.email),
+                  ),
+                );
+              },
+              child: const Text(
+                'Görev Ekle',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(

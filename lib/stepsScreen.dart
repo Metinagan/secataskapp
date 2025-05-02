@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class StepListScreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class _StepListScreenState extends State<StepListScreen> {
             .collection('tasks')
             .doc(widget.taskId)
             .collection('steps')
-            .orderBy('createdtime')
+            .orderBy('startdate')
             .get();
 
     return stepsSnapshot.docs.map((doc) {
@@ -207,42 +208,67 @@ class _StepListScreenState extends State<StepListScreen> {
                       Text(
                         note.isNotEmpty ? note : "Açıklama Yok",
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: Colors.deepPurple,
                         ),
                       ),
                       const SizedBox(height: 6),
-                      if (startDate != null)
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.play_circle_outline,
-                              color: Colors.green,
-                              size: 18,
+                      Column(children: [
+                          
+                        ],
+                      ),
+                      Row(
+                        //mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (startDate != null)
+                            Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.play_circle_outline,
+                                      color: Colors.green,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "Başlangıç: ${DateFormat('dd MMM yyyy HH:mm').format(startDate)}",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green[700],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Başlangıç: ${DateFormat('dd MMM yyyy HH:mm').format(startDate)}",
-                              style: TextStyle(color: Colors.green[700]),
+                          if (endDate != null)
+                            Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    SizedBox(width: 10),
+                                    const Icon(
+                                      Icons.stop_circle_outlined,
+                                      color: Colors.red,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "Bitiş: ${DateFormat('dd MMM yyyy HH:mm').format(endDate)}",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.red[700],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      if (endDate != null)
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.stop_circle_outlined,
-                              color: Colors.red,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Bitiş: ${DateFormat('dd MMM yyyy HH:mm').format(endDate)}",
-                              style: TextStyle(color: Colors.red[700]),
-                            ),
-                          ],
-                        ),
+                        ],
+                      ),
+
                       if (workDuration != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
@@ -257,6 +283,7 @@ class _StepListScreenState extends State<StepListScreen> {
                               Text(
                                 "Çalışma Süresi: ${formatDuration(workDuration)}",
                                 style: TextStyle(
+                                  fontSize: 14,
                                   color: Colors.orange[700],
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -316,10 +343,14 @@ class _StepListScreenState extends State<StepListScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
+                TextFormField(
+                  maxLines:
+                      5, // Bu, en fazla 5 satır olmasına izin verir. Bu değeri ihtiyacınıza göre artırabilirsiniz.
+                  keyboardType: TextInputType.multiline,
                   decoration: const InputDecoration(labelText: "Not"),
                   onChanged: (value) => note = value,
                 ),
+
                 GestureDetector(
                   onTap: () async {
                     final date = await showDatePicker(
