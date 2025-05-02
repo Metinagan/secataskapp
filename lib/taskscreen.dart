@@ -382,6 +382,7 @@ class _TaskScreenState extends State<TaskScreen> {
                                 if (task['note'] != null &&
                                     task['note'].isNotEmpty)
                                   Text("NOT! : ${task['note']}"),
+                                // ignore: unnecessary_null_comparison
                                 if (taskDate != null && endDate != null)
                                   FutureBuilder<Duration>(
                                     future: getTotalStepsDuration(task['id']),
