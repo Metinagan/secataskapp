@@ -296,7 +296,7 @@ class _TaskScreenState extends State<TaskScreen> {
                         DateTime? createDate =
                             (task['createdtime'] as Timestamp).toDate();
                         DateTime? taskDate =
-                            (task['startdate'] as Timestamp).toDate();
+                            (task['startdate'] as Timestamp?)?.toDate();
                         DateTime? endDate =
                             (task['enddate'] as Timestamp?)?.toDate();
 
@@ -345,9 +345,11 @@ class _TaskScreenState extends State<TaskScreen> {
                                 Text(
                                   "Oluşturulma Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(createDate)}",
                                 ),
-                                Text(
-                                  "Başlangıç Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(taskDate)}",
-                                ),
+                                if (taskDate != null)
+                                  Text(
+                                    "Başlangıç Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(taskDate)}",
+                                  ),
+                                const SizedBox(height: 8),
                                 if (endDate != null)
                                   Text(
                                     "Bitiş Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(endDate)}",

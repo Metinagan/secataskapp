@@ -104,6 +104,44 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
     };
   }
 
+  Future<Map<String, dynamic>?> showEmployeeSelectionDialog(
+    BuildContext context,
+    List<Map<String, dynamic>> employees,
+  ) async {
+    return showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Silinecek çalışanı seçin"),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 300,
+            child: ListView.builder(
+              itemCount: employees.length,
+              itemBuilder: (context, index) {
+                final employee = employees[index];
+                final fullName = '${employee['name']} ${employee['surname']}';
+                return ListTile(
+                  leading: const Icon(Icons.person),
+                  title: Text(fullName),
+                  onTap: () {
+                    Navigator.of(context).pop(employee);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text("İptal"),
+              onPressed: () => Navigator.of(context).pop(null),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -310,8 +348,33 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: DropdownButton<String>(
+                              child: DropdownButtonFormField<String>(
                                 value: selectedEmployeeName,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.deepPurpleAccent
+                                          .withOpacity(0.3),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.deepPurpleAccent
+                                          .withOpacity(0.5),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.deepPurpleAccent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
                                 isExpanded: true,
                                 items: [
                                   const DropdownMenuItem(
@@ -323,7 +386,23 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                                         '${e['name']} ${e['surname']}';
                                     return DropdownMenuItem(
                                       value: fullName,
-                                      child: Text(fullName),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.person,
+                                            color: Colors.black,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            fullName,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     );
                                   }),
                                 ],
@@ -342,6 +421,11 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                                     }
                                   });
                                 },
+                                dropdownColor:
+                                    Colors.white, // Menü arka plan rengi
+                                style: const TextStyle(
+                                  color: Colors.deepPurpleAccent,
+                                ),
                               ),
                             ),
                           ],
@@ -392,7 +476,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 30),
 
                         /// Pie Chart
                         FutureBuilder<Map<String, double>>(
@@ -434,12 +518,129 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                             );
                           },
                         ),
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  ),
+                ),
+                //çalışa silme kartı
+                Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.all(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.delete),
+                            label: const Text("Çalışan Sil"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              textStyle: const TextStyle(fontSize: 16),
+                            ),
+                            onPressed: () async {
+                              final selectedEmployee =
+                                  await showEmployeeSelectionDialog(
+                                    context,
+                                    employees,
+                                  );
+
+                              if (selectedEmployee != null) {
+                                String fullName =
+                                    '${selectedEmployee['name']} ${selectedEmployee['surname']}';
+
+                                bool? confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder:
+                                      (context) => AlertDialog(
+                                        title: Text('$fullName silinsin mi?'),
+                                        content: const Text(
+                                          "Bu işlem geri alınamaz. Devam etmek istiyor musunuz?",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.of(
+                                                  context,
+                                                ).pop(false),
+                                            child: const Text("İptal"),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed:
+                                                () => Navigator.of(
+                                                  context,
+                                                ).pop(true),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.redAccent,
+                                            ),
+                                            child: const Text("Evet, Sil"),
+                                          ),
+                                        ],
+                                      ),
+                                );
+
+                                if (confirm == true) {
+                                  // 1. Firestore'dan kullanıcıyı sil
+                                  final userSnapshot =
+                                      await FirebaseFirestore.instance
+                                          .collection('secavision')
+                                          .doc('WrgRRDBv5bn9WhP1UESe')
+                                          .collection('users')
+                                          .where(
+                                            'email',
+                                            isEqualTo:
+                                                selectedEmployee['email'],
+                                          )
+                                          .get();
+
+                                  for (var doc in userSnapshot.docs) {
+                                    await doc.reference.delete();
+                                  }
+
+                                  // 2. Görevleri sil
+                                  final tasksSnapshot =
+                                      await FirebaseFirestore.instance
+                                          .collection('secavision')
+                                          .doc('WrgRRDBv5bn9WhP1UESe')
+                                          .collection('tasks')
+                                          .where(
+                                            'ownermail',
+                                            isEqualTo:
+                                                selectedEmployee['email'],
+                                          )
+                                          .get();
+
+                                  for (var doc in tasksSnapshot.docs) {
+                                    await doc.reference.delete();
+                                  }
+
+                                  // Listeyi güncelle
+                                  fetchEmployees();
+                                  refreshEmployeeList();
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        "$fullName ve görevleri silindi.",
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 60),
+                const SizedBox(height: 100),
               ],
             ),
           );
