@@ -14,25 +14,26 @@ class AddTaskScreen extends StatefulWidget {
 class _AddTaskScreenState extends State<AddTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   late String _title, _note;
-  late DateTime _startDate;
+  DateTime? _startDate;
   DateTime? _endDate;
+
   int? _taskState = 1;
 
   @override
   void initState() {
     super.initState();
-    _startDate =
-        DateTime.now(); // Başlangıç tarihini şu anki tarih olarak ayarlıyoruz
   }
 
   Future<void> _pickStartDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _startDate,
+      initialDate:
+          _startDate ??
+          DateTime.now(), // ilk seçimde yine DateTime.now() gösterilsin ama atama olmasın
       firstDate: DateTime(2020),
       lastDate: DateTime(2101),
     );
-    if (picked != null && picked != _startDate) {
+    if (picked != null) {
       setState(() {
         _startDate = picked;
       });
@@ -77,7 +78,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       .collection('tasks')
                       .add({
                         'title': _title,
-                        'startdate': Timestamp.fromDate(_startDate),
+                        'startdate':
+                            _startDate != null
+                                ? Timestamp.fromDate(_startDate!)
+                                : null,
                         'enddate':
                             _endDate != null
                                 ? Timestamp.fromDate(_endDate!)
@@ -182,7 +186,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                                 style: TextStyle(color: primaryColor),
                               ),
                               Text(
-                                DateFormat('dd MMM yyyy').format(_startDate),
+                                _startDate != null
+                                    ? DateFormat(
+                                      'dd MMM yyyy',
+                                    ).format(_startDate!)
+                                    : 'Seçiniz',
                                 style: TextStyle(color: primaryColor),
                               ),
                             ],
@@ -270,7 +278,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                             .collection('tasks')
                             .add({
                               'title': _title,
-                              'startdate': Timestamp.fromDate(_startDate),
+                              'startdate':
+                                  _startDate != null
+                                      ? Timestamp.fromDate(_startDate!)
+                                      : null,
                               'enddate':
                                   _endDate != null
                                       ? Timestamp.fromDate(_endDate!)
@@ -283,7 +294,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Görev başarıyla eklendi!')),
                         );
-                        Navigator.pop(context);
+                        Navigator.pop(context, true);
                       } catch (e) {
                         ScaffoldMessenger.of(
                           context,

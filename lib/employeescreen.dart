@@ -216,56 +216,77 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: AppBar(
-          backgroundColor: Colors.deepPurpleAccent,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
-            ),
+      appBar: AppBar(
+        backgroundColor: Colors.deepPurpleAccent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
           ),
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.deepPurpleAccent, Colors.purple],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          title: Center(
-            child: Text(
-              widget.name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 32,
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddTaskScreen(email: widget.email),
-                  ),
-                );
-              },
-              child: const Text(
-                'Görev Ekle',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ],
         ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurpleAccent, Colors.purple],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Center(
+                  child: Text(
+                    widget.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 32,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 16,
+                  top: 12,
+                  child: TextButton(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => AddTaskScreen(email: widget.email),
+                        ),
+                      );
+                      if (result == true) {
+                        fetchTasks();
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      side: const BorderSide(color: Colors.white, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: const Text(
+                      'Görev Ekle',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        automaticallyImplyLeading: false,
+        title: null,
       ),
 
       body: Padding(
@@ -321,8 +342,8 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
                       });
                     },
                     children: [
-                      _buildToggleButton("Yeni → Eski"),
-                      _buildToggleButton("Eski → Yeni"),
+                      _buildToggleButton("En Yeni"),
+                      _buildToggleButton("En Eski"),
                     ],
                     color: Colors.deepPurpleAccent,
                     selectedColor: Colors.white,
