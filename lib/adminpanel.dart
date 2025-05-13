@@ -25,11 +25,56 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
   String? selectedEmail;
   List<bool> isSelected = [true, false, false];
   String selectedFilter = 'Bu Hafta';
+  List<Map<String, dynamic>> filteredSteps = [];
 
+  int selectedStatus = 5;
+
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  @override
   @override
   void initState() {
     super.initState();
     employeesFuture = fetchEmployees();
+
+    _startDate = DateTime.now().subtract(Duration(days: 7));
+    _endDate = DateTime.now();
+
+    loadFilteredSteps();
+  }
+
+  Future<void> loadFilteredSteps() async {
+    final steps = await fetchFilteredSteps(
+      selectedEmail: selectedEmail,
+      selectedStatus: selectedStatus,
+      startDate: _startDate,
+      endDate: _endDate,
+    );
+    setState(() {
+      filteredSteps = steps;
+    });
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStartDate) {
+          _startDate = picked;
+        } else {
+          _endDate = picked;
+        }
+      });
+
+      //Tarih değişince görevleri tekrar filtrele
+      loadFilteredSteps();
+    }
   }
 
   Future<List<Map<String, dynamic>>> fetchEmployees() async {
@@ -102,6 +147,189 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
       'Devam Ediyor': stateCounts[2]!.toDouble(),
       'Tamamlandı': stateCounts[3]!.toDouble(),
     };
+  }
+
+  Future<List<Map<String, dynamic>>> fetchFilteredSteps({
+    required String? selectedEmail,
+    required int selectedStatus,
+    required DateTime? startDate,
+    required DateTime? endDate,
+  }) async {
+    List<Map<String, dynamic>> filteredSteps = [];
+
+    try {
+      final tasksSnapshot =
+          await FirebaseFirestore.instance
+              .collection('secavision')
+              .doc('WrgRRDBv5bn9WhP1UESe')
+              .collection('tasks')
+              .get();
+
+      for (var taskDoc in tasksSnapshot.docs) {
+        final taskData = taskDoc.data();
+
+        if (selectedEmail != null &&
+            selectedEmail != 'Herkes' &&
+            taskData['ownermail'] != selectedEmail) {
+          continue;
+        }
+
+        if (selectedStatus != 5 && taskData['taskstate'] != selectedStatus) {
+          continue;
+        }
+
+        final stepsSnapshot = await taskDoc.reference.collection('steps').get();
+
+        for (var stepDoc in stepsSnapshot.docs) {
+          final stepData = stepDoc.data();
+          final stepStart = stepData['startdate'];
+
+          DateTime? stepDate;
+          if (stepStart is Timestamp) {
+            stepDate = stepStart.toDate(); // ✅ Timestamp'tan DateTime'a
+          }
+
+          if (stepDate != null &&
+              startDate != null &&
+              endDate != null &&
+              stepDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+              stepDate.isBefore(endDate.add(const Duration(days: 1)))) {
+            filteredSteps.add({
+              'taskId': taskDoc.id,
+              'taskTitle': taskData['title'],
+              'taskOwner': taskData['ownermail'],
+              'name': taskData['name'],
+              'surname': taskData['surname'],
+              'step': stepData,
+            });
+          }
+        }
+      }
+
+      print("Toplam adım: ${filteredSteps.length}"); // 🐞 Debug için
+
+      return filteredSteps;
+    } catch (e) {
+      print('Hata (adım okuma): $e');
+      return [];
+    }
+  }
+
+  List<Widget> _buildTaskList(List<Map<String, dynamic>> stepsData) {
+    // taskId'ye göre grupla
+    Map<String, Map<String, dynamic>> grouped = {};
+
+    for (var entry in stepsData) {
+      String taskId = entry['taskId'];
+      String title = entry['taskTitle'] ?? 'Başlıksız Görev';
+      String owner = entry['taskOwner'] ?? 'Bilinmiyor';
+      Map<String, dynamic> step = entry['step'];
+
+      if (!grouped.containsKey(taskId)) {
+        grouped[taskId] = {
+          'title': title,
+          'ownermail': owner,
+          'steps': <Map<String, dynamic>>[],
+        };
+      }
+
+      (grouped[taskId]!['steps'] as List<Map<String, dynamic>>).add(step);
+    }
+
+    return grouped.entries.map((entry) {
+      final task = entry.value;
+      final steps = task['steps'] as List<Map<String, dynamic>>;
+
+      return Card(
+        elevation: 4,
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Görev adı ve mail
+                Text(
+                  '📌 ${task['title']}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '👤 ${task['ownermail']}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Her step için küçük kart
+                ...steps.map((step) {
+                  String note = step['note'] ?? 'Not yok';
+
+                  DateTime? startDate;
+                  DateTime? endDate;
+
+                  if (step['startdate'] is Timestamp) {
+                    startDate = (step['startdate'] as Timestamp).toDate();
+                  }
+                  if (step['enddate'] is Timestamp) {
+                    endDate = (step['enddate'] as Timestamp).toDate();
+                  }
+
+                  return Card(
+                    color: const Color(0xFFF1F1F6),
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    child: Container(
+                      width: double.infinity,
+                      child: Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('• $note'),
+                            const SizedBox(height: 4),
+                            if (startDate != null)
+                              Text(
+                                '🕒 Başlangıç: ${startDate.day}/${startDate.month}/${startDate.year} - '
+                                '${startDate.hour.toString().padLeft(2, '0')}:${startDate.minute.toString().padLeft(2, '0')}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            if (endDate != null)
+                              Text(
+                                '✅ Bitiş: ${endDate.day}/${endDate.month}/${endDate.year} - '
+                                '${endDate.hour.toString().padLeft(2, '0')}:${endDate.minute.toString().padLeft(2, '0')}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList();
   }
 
   Future<Map<String, dynamic>?> showEmployeeSelectionDialog(
@@ -419,6 +647,8 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                                       );
                                       selectedEmail = selected['email'];
                                     }
+                                    loadFilteredSteps();
+                                    //_buildTaskList(filteredSteps);
                                   });
                                 },
                                 dropdownColor:
@@ -496,24 +726,27 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                               return const Text("Görev bulunamadı.");
                             }
 
-                            return PieChart(
-                              dataMap: dataMap,
-                              chartType: ChartType.ring,
-                              ringStrokeWidth: 32,
-                              chartRadius:
-                                  MediaQuery.of(context).size.width / 2.5,
-                              colorList: const [
-                                Colors.red,
-                                Colors.orange,
-                                Colors.blue,
-                                Colors.green,
-                              ],
-                              legendOptions: const LegendOptions(
-                                legendPosition: LegendPosition.left,
-                                showLegends: true,
-                              ),
-                              chartValuesOptions: const ChartValuesOptions(
-                                showChartValues: true,
+                            return Container(
+                              height: 300, // Sabit yükseklik 400 piksel
+                              child: PieChart(
+                                dataMap: dataMap,
+                                chartType: ChartType.ring,
+                                ringStrokeWidth: 32,
+                                chartRadius:
+                                    MediaQuery.of(context).size.width / 2.5,
+                                colorList: const [
+                                  Colors.red,
+                                  Colors.orange,
+                                  Colors.blue,
+                                  Colors.green,
+                                ],
+                                legendOptions: const LegendOptions(
+                                  legendPosition: LegendPosition.left,
+                                  showLegends: true,
+                                ),
+                                chartValuesOptions: const ChartValuesOptions(
+                                  showChartValues: true,
+                                ),
                               ),
                             );
                           },
@@ -523,6 +756,113 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 10),
+                // Tarih Aralığı Kartı
+                Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.all(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Tarih seçimleri
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _selectDate(context, true),
+                                child: AbsorbPointer(
+                                  child: TextFormField(
+                                    decoration: InputDecoration(
+                                      labelText: 'Başlangıç Tarihi',
+                                      suffixIcon: Icon(Icons.calendar_today),
+                                    ),
+                                    controller: TextEditingController(
+                                      text:
+                                          _startDate == null
+                                              ? ''
+                                              : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}',
+                                    ),
+                                    readOnly: true,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _selectDate(context, false),
+                                child: AbsorbPointer(
+                                  child: TextFormField(
+                                    decoration: InputDecoration(
+                                      labelText: 'Bitiş Tarihi',
+                                      suffixIcon: Icon(Icons.calendar_today),
+                                    ),
+                                    controller: TextEditingController(
+                                      text:
+                                          _endDate == null
+                                              ? ''
+                                              : '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                                    ),
+                                    readOnly: true,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Durum Dropdown
+                        DropdownButtonFormField<int>(
+                          value: selectedStatus,
+                          decoration: const InputDecoration(
+                            labelText: 'Durum',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 5, child: Text('Hepsi')),
+                            DropdownMenuItem(
+                              value: 1,
+                              child: Text('Başlamadı'),
+                            ),
+                            DropdownMenuItem(
+                              value: 2,
+                              child: Text('Devam Ediyor'),
+                            ),
+                            DropdownMenuItem(
+                              value: 3,
+                              child: Text('Tamamlandı'),
+                            ),
+                            DropdownMenuItem(
+                              value: 0,
+                              child: Text('İptal Edildi'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              selectedStatus = value!;
+                            });
+                            loadFilteredSteps();
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Görevler Listesi
+                        if (filteredSteps.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text('Filtreye uyan görev bulunamadı.'),
+                          )
+                        else
+                          ..._buildTaskList(filteredSteps), // ✅ YENİLEME BURADA
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 30),
                 //çalışa silme kartı
                 Card(
                   elevation: 4,
