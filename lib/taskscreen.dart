@@ -357,8 +357,8 @@ class _TaskScreenState extends State<TaskScreen> {
                                 if (task['note'] != null &&
                                     task['note'].isNotEmpty)
                                   Text("NOT! : ${task['note']}"),
-                                // ignore: unnecessary_null_comparison
-                                if (taskDate != null && endDate != null)
+
+                                if (taskDate != null)
                                   FutureBuilder<Duration>(
                                     future: getTotalStepsDuration(task['id']),
                                     builder: (context, snapshot) {
@@ -413,7 +413,7 @@ class _TaskScreenState extends State<TaskScreen> {
                                         builder:
                                             (context) => StepListScreen(
                                               taskId: task['id'],
-                                            ), // Buraya gideceğin ekranı yaz
+                                            ),
                                       ),
                                     );
                                   },

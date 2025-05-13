@@ -449,45 +449,43 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
                                       "Bitiş Tarihi: ${DateFormat('dd MMM yyyy HH:mm').format(endDate)}",
                                       style: TextStyle(color: Colors.red[700]),
                                     ),
-                                  if (startDate != null && endDate != null)
-                                    FutureBuilder<Duration>(
-                                      future: getTotalStepsDuration(task['id']),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState ==
-                                            ConnectionState.waiting) {
-                                          return const CircularProgressIndicator();
-                                        }
+                                  FutureBuilder<Duration>(
+                                    future: getTotalStepsDuration(task['id']),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return const CircularProgressIndicator();
+                                      }
 
-                                        if (snapshot.hasError) {
-                                          return const Text(
-                                            "Süre hesaplanamadı.",
-                                          );
-                                        }
-
-                                        Duration totalStepsDuration =
-                                            snapshot.data ?? Duration.zero;
-
-                                        return Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.access_time,
-                                              color: Colors.orange,
-                                              size: 18,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              "Çalışma Süresi: ${formatDuration(totalStepsDuration)}",
-                                              style: TextStyle(
-                                                color:
-                                                    Colors
-                                                        .orange, // Turuncu renk
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
+                                      if (snapshot.hasError) {
+                                        return const Text(
+                                          "Süre hesaplanamadı.",
                                         );
-                                      },
-                                    ),
+                                      }
+
+                                      Duration totalStepsDuration =
+                                          snapshot.data ?? Duration.zero;
+
+                                      return Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.access_time,
+                                            color: Colors.orange,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            "Çalışma Süresi: ${formatDuration(totalStepsDuration)}",
+                                            style: TextStyle(
+                                              color:
+                                                  Colors.orange, // Turuncu renk
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
                                 ],
                               ),
                               trailing: Row(
