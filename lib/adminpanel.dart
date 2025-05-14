@@ -8,11 +8,13 @@ import 'package:secatask/taskscreen.dart';
 class MyAdminPanelScreen extends StatefulWidget {
   final String name;
   final String email;
+  final String teamID;
 
   const MyAdminPanelScreen({
     super.key,
     required this.name,
     required this.email,
+    required this.teamID,
   });
 
   @override
@@ -36,7 +38,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
   @override
   void initState() {
     super.initState();
-    employeesFuture = fetchEmployees();
+    employeesFuture = fetchEmployees(teamId: widget.teamID);
 
     _startDate = DateTime.now().subtract(Duration(days: 7));
     _endDate = DateTime.now();
@@ -79,25 +81,31 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
     }
   }
 
-  /// Çalışanları al
-  Future<List<Map<String, dynamic>>> fetchEmployees() async {
+  Future<List<Map<String, dynamic>>> fetchEmployees({
+    required String teamId,
+  }) async {
     List<Map<String, dynamic>> employees = [];
+
+    // usersRef'yi direkt olarak teamId'ye göre filtrele
     final usersRef = FirebaseFirestore.instance
         .collection('secavision')
         .doc('WrgRRDBv5bn9WhP1UESe')
         .collection('users');
 
-    final snapshot = await usersRef.get();
+    // teamId'ye göre sorgulama yap
+    final snapshot = await usersRef.where('teamID', isEqualTo: teamId).get();
+
     for (var doc in snapshot.docs) {
       employees.add(doc.data());
     }
+
     return employees;
   }
 
-  /// Çalışanları güncelle
-  void refreshEmployeeList() {
+  void refreshEmployeeList(String teamId) {
     setState(() {
-      employeesFuture = fetchEmployees();
+      // teamId'yi doğru parametre olarak geç
+      employeesFuture = fetchEmployees(teamId: teamId);
     });
   }
 
@@ -106,7 +114,8 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
     final taskRef = FirebaseFirestore.instance
         .collection('secavision')
         .doc('WrgRRDBv5bn9WhP1UESe')
-        .collection('tasks');
+        .collection('tasks')
+        .where('teamID', isEqualTo: widget.teamID);
 
     Query query = taskRef;
 
@@ -169,6 +178,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
               .collection('secavision')
               .doc('WrgRRDBv5bn9WhP1UESe')
               .collection('tasks')
+              .where('teamID', isEqualTo: widget.teamID)
               .get();
 
       for (var taskDoc in tasksSnapshot.docs) {
@@ -409,7 +419,10 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                 context,
                 MaterialPageRoute(
                   builder:
-                      (context) => AddMultiUserTaskScreen(email: widget.email),
+                      (context) => AddMultiUserTaskScreen(
+                        email: widget.email,
+                        teamID: widget.teamID,
+                      ),
                 ),
               );
             },
@@ -434,6 +447,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                   builder:
                       (context) => AddEmployeeScreen(
                         onEmployeeAdded: refreshEmployeeList,
+                        teamID: widget.teamID,
                       ),
                 ),
               );
@@ -965,8 +979,8 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                                   }
 
                                   // Listeyi güncelle
-                                  fetchEmployees();
-                                  refreshEmployeeList();
+                                  fetchEmployees(teamId: widget.teamID);
+                                  refreshEmployeeList(widget.teamID);
 
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(

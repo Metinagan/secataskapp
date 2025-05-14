@@ -55,12 +55,16 @@ class _LoginPageState extends State<LoginPage> {
           var adminSurname = doc.data()['surname'];
           var name = adminName + ' ' + adminSurname;
           var adminEmail = doc.data()['email'];
+          var teamID = doc.data()['teamID'];
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder:
-                  (context) =>
-                      MyAdminPanelScreen(name: name, email: adminEmail),
+                  (context) => MyAdminPanelScreen(
+                    name: name,
+                    email: adminEmail,
+                    teamID: teamID,
+                  ),
             ),
           );
         } else if (role == 'employee') {
@@ -72,14 +76,18 @@ class _LoginPageState extends State<LoginPage> {
           var employeeSurname = doc.data()['surname'];
           var name = employeeName + ' ' + employeeSurname;
           var employeeEmail = doc.data()['email'];
+          var employeeteamID = doc.data()['teamID'];
 
           // Çalışan ekranına yönlendirme
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder:
-                  (context) =>
-                      MyEmployeeTasksScreen(name: name, email: employeeEmail),
+                  (context) => MyEmployeeTasksScreen(
+                    name: name,
+                    email: employeeEmail,
+                    teamID: employeeteamID,
+                  ),
             ),
           );
         } else {

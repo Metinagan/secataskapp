@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddMultiUserTaskScreen extends StatefulWidget {
   final String email;
-
-  AddMultiUserTaskScreen({required this.email});
+  final String teamID;
+  AddMultiUserTaskScreen({required this.email, required this.teamID});
 
   @override
   _AddMultiUserTaskScreenState createState() => _AddMultiUserTaskScreenState();
@@ -29,6 +29,7 @@ class _AddMultiUserTaskScreenState extends State<AddMultiUserTaskScreen> {
             .collection('secavision')
             .doc('WrgRRDBv5bn9WhP1UESe')
             .collection('users')
+            .where('teamID', isEqualTo: widget.teamID)
             .get();
 
     setState(() {
@@ -50,6 +51,7 @@ class _AddMultiUserTaskScreenState extends State<AddMultiUserTaskScreen> {
             'enddate': null,
             'note': _note,
             'createdtime': Timestamp.fromDate(createdTime),
+            'teamID': widget.teamID,
           });
     }
   }

@@ -4,8 +4,13 @@ import 'package:flutter/services.dart'; // TextInputFormatter için gerekli impo
 
 class AddEmployeeScreen extends StatefulWidget {
   final Function onEmployeeAdded;
+  final String teamID;
 
-  const AddEmployeeScreen({super.key, required this.onEmployeeAdded});
+  const AddEmployeeScreen({
+    super.key,
+    required this.teamID,
+    required this.onEmployeeAdded,
+  });
 
   @override
   _AddEmployeeScreenState createState() => _AddEmployeeScreenState();
@@ -42,6 +47,7 @@ class _AddEmployeeScreenState extends State<AddEmployeeScreen> {
         'email': email,
         'password': password,
         'role': 'employee',
+        'teamID': widget.teamID,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

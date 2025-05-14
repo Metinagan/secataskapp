@@ -4,8 +4,9 @@ import 'package:intl/intl.dart';
 
 class AddTaskScreen extends StatefulWidget {
   final String email;
+  final String teamID;
 
-  AddTaskScreen({required this.email});
+  AddTaskScreen({required this.email, required this.teamID});
 
   @override
   _AddTaskScreenState createState() => _AddTaskScreenState();
@@ -90,6 +91,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         'ownermail': widget.email,
                         'note': _note,
                         'createdtime': Timestamp.fromDate(createdTime),
+                        'teamID': widget.teamID,
                       });
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Görev başarıyla eklendi!')),
@@ -290,6 +292,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                               'ownermail': widget.email,
                               'note': _note,
                               'createdtime': Timestamp.fromDate(createdTime),
+                              'teamID': widget.teamID,
                             });
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Görev başarıyla eklendi!')),

@@ -8,8 +8,13 @@ import 'package:secatask/stepsScreen.dart';
 class MyEmployeeTasksScreen extends StatefulWidget {
   final String name;
   final String email;
+  final String teamID;
 
-  MyEmployeeTasksScreen({required this.name, required this.email});
+  MyEmployeeTasksScreen({
+    required this.name,
+    required this.email,
+    required this.teamID,
+  });
 
   @override
   _MyEmployeeTasksScreenState createState() => _MyEmployeeTasksScreenState();
@@ -255,7 +260,10 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
                           context,
                           MaterialPageRoute(
                             builder:
-                                (context) => AddTaskScreen(email: widget.email),
+                                (context) => AddTaskScreen(
+                                  email: widget.email,
+                                  teamID: widget.teamID,
+                                ),
                           ),
                         );
                         if (result == true) {
