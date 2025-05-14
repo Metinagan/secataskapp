@@ -44,6 +44,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
     loadFilteredSteps();
   }
 
+  /// Görev adımlarını yükle
   Future<void> loadFilteredSteps() async {
     final steps = await fetchFilteredSteps(
       selectedEmail: selectedEmail,
@@ -56,6 +57,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
     });
   }
 
+  /// Tarih seçimi
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -77,6 +79,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
     }
   }
 
+  /// Çalışanları al
   Future<List<Map<String, dynamic>>> fetchEmployees() async {
     List<Map<String, dynamic>> employees = [];
     final usersRef = FirebaseFirestore.instance
@@ -91,12 +94,14 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
     return employees;
   }
 
+  /// Çalışanları güncelle
   void refreshEmployeeList() {
     setState(() {
       employeesFuture = fetchEmployees();
     });
   }
 
+  /// Görev durumlarını al
   Future<Map<String, double>> fetchTaskStateData() async {
     final taskRef = FirebaseFirestore.instance
         .collection('secavision')
@@ -149,6 +154,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
     };
   }
 
+  /// Görev adımlarını filtrele
   Future<List<Map<String, dynamic>>> fetchFilteredSteps({
     required String? selectedEmail,
     required int selectedStatus,
@@ -215,6 +221,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
     }
   }
 
+  /// Görev adımlarını listele
   List<Widget> _buildTaskList(List<Map<String, dynamic>> stepsData) {
     // taskId'ye göre grupla
     Map<String, Map<String, dynamic>> grouped = {};
