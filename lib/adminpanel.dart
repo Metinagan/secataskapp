@@ -495,7 +495,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                             itemCount:
                                 employees.length > 6
                                     ? 6
-                                    : employees.length, // İlk 10 öğe
+                                    : employees.length, // İlk 6 öğe
                             itemBuilder: (context, index) {
                               String employeeName =
                                   '${employees[index]['name']} ${employees[index]['surname']}';
@@ -648,7 +648,6 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                                       selectedEmail = selected['email'];
                                     }
                                     loadFilteredSteps();
-                                    //_buildTaskList(filteredSteps);
                                   });
                                 },
                                 dropdownColor:
