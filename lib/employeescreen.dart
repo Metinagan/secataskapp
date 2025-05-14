@@ -233,55 +233,57 @@ class _MyEmployeeTasksScreenState extends State<MyEmployeeTasksScreen> {
             ),
           ),
           child: SafeArea(
-            child: Stack(
-              children: [
-                Center(
-                  child: Text(
-                    widget.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 32,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 16,
-                  top: 12,
-                  child: TextButton(
-                    onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => AddTaskScreen(email: widget.email),
-                        ),
-                      );
-                      if (result == true) {
-                        fetchTasks();
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      side: const BorderSide(color: Colors.white, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                    ),
-                    child: const Text(
-                      'Görev Ekle',
-                      style: TextStyle(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                height: kToolbarHeight, // AppBar yüksekliği
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      widget.name,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 28,
                       ),
                     ),
-                  ),
+                    TextButton(
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => AddTaskScreen(email: widget.email),
+                          ),
+                        );
+                        if (result == true) {
+                          fetchTasks();
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        side: const BorderSide(color: Colors.white, width: 2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                      ),
+                      child: const Text(
+                        'Görev Ekle',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

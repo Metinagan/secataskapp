@@ -242,12 +242,12 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
 
       return Card(
         elevation: 4,
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Container(
           width: double.infinity,
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -288,13 +288,13 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                     color: const Color(0xFFF1F1F6),
                     elevation: 1,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    margin: const EdgeInsets.symmetric(vertical: 6),
+
                     child: Container(
                       width: double.infinity,
                       child: Padding(
-                        padding: const EdgeInsets.all(10.0),
+                        padding: const EdgeInsets.all(6.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -757,12 +757,11 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                // Tarih Aralığı Kartı
+                // Görev Adımları Filtreleme Kartı
                 Card(
                   elevation: 4,
-                  margin: const EdgeInsets.all(12),
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(8.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -852,7 +851,7 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                         // Görevler Listesi
                         if (filteredSteps.isEmpty)
                           const Padding(
-                            padding: EdgeInsets.all(16.0),
+                            padding: EdgeInsets.all(4.0),
                             child: Text('Filtreye uyan görev bulunamadı.'),
                           )
                         else
@@ -866,9 +865,9 @@ class _MyAdminPanelScreenState extends State<MyAdminPanelScreen> {
                 //çalışa silme kartı
                 Card(
                   elevation: 4,
-                  margin: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.all(8),
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(8.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
